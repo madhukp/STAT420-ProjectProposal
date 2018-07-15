@@ -41,8 +41,8 @@ The dataset has 23 attributes. The response variable - `ABV` is a *real* variabl
 |---------------|-------------|--------------------------------------------------------------------------------|
 | `SugarScale`  | Categorical | Scale to determine the concentration of dissolved solids in wort |
 | `BrewMethod`  | Categorical | Various techniques for brewing (Ex: All Grain) |
-| `BoilTime`    | Real        | Scale to determine the concentration of dissolved solids in wort |
-| `BoilGravity` | Real        | Color using Reference Method - light to dark ex. 40 = black |
+| `BoilTime`    | Real        | Time wort is boiled |
+| `BoilGravity` | Real        | Specific gravity of wort before the boil |
 | `Color`       | Real        | Color using Reference Method - light to dark ex. 40 = black |
 | `Efficiency`  | Real        | Beer mash extraction efficiency - extracting sugars from the grain during mash |
 | `OGSpecific`  | Real        | Specific gravity of wort before fermentation |
@@ -53,13 +53,13 @@ The dataset has 23 attributes. The response variable - `ABV` is a *real* variabl
 
 ## Brief Statement on interest
 
-There are many brew enthusiast who like to brew beer in home. To make a good beer or to improve a receipe over several tries it is essential to capture several readings during and after the brewing process which requires one to buy costly sensors or measuring gadgets. We wanted to analyze and see if we can make predictions of one of the parameters namely - ABV - from other readings without having to buy any measuing gadgets. 
+There are many brew enthusiast who like to brew beer in home. To make a good beer or to improve a receipe over many tries it is essential to capture several readings during and after the brewing process which requires one to buy costly sensors or measuring gadgets. We wanted to check if we can eliminate any sensors or measuring gadgets. Particularly we wanted to analyze and see if we can make predictions of one of the parameters namely - ABV - from other readings and do away with any measuing gadgets for it.
 
 ---
 
 ## Data Load - Preliminary Check
 
-Below `R` block is an evidence that data can be loaded into `R`. Also printed are the first few values of the response variable **ABV**.
+Below `R` blocks result is an evidence that data can be loaded into `R`. Also printed are the first few values of the response variable **ABV**.
 
 ```{r}
 # read csv file
