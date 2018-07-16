@@ -16,10 +16,10 @@ urlcolor: cyan
 
 This study will be conducted by the following individuals:
 
- - Nicholas Reinicke (NetID: **ndr3**)
- - Raymond Ordona (NetID: **xxxx**)
- - Apoorva H Srinivasa (NetID: **xxxx**)
+ - Apoorva H Srinivasa (NetID: **apoorva6**)
  - Madhukar K P (NetID: **mk30**)
+ - Nicholas Reinicke (NetID: **ndr3**)
+ - Raymond Ordona (NetID: **rordona2**)
 
 ---
 
@@ -33,9 +33,9 @@ As part of this project we intend to study the factors in brewing process that a
 
 ## Dataset
 
-For this project we will be utilizing a dataset that contains information on approximately 75,000 different recipies of craft beer along with the readings of various sensors captured during the brewing process. The raw data was sourced from [Brewer's Friend Beer Recipes](https://www.kaggle.com/jtrofe/beer-recipes) available under Kaggle platform.
+For this project we will be utilizing a dataset ([`recipeData.csv`](recipeData.csv)) that contains information on approximately 75,000 different recipies of craft beer along with the readings of various sensors captured during the brewing process. The raw data was sourced from [Brewer's Friend Beer Recipes](https://www.kaggle.com/jtrofe/beer-recipes) available under Kaggle platform.
 
-The dataset has 23 attributes. The response variable - `ABV` is a *real* variable. Below are some of the key attributes (predictors) that we would be using in our study,
+The dataset has 23 attributes. The response variable - `ABV` is a *real* variable. Below are some of the initial key attributes (predictors) that we would be using in our study,
 
 | Attribute     | Domain      | Description                                                                    |
 |---------------|-------------|--------------------------------------------------------------------------------|
@@ -53,7 +53,7 @@ The dataset has 23 attributes. The response variable - `ABV` is a *real* variabl
 
 ## Brief Statement on interest
 
-There are many brew enthusiast who like to brew beer in home. To make a good beer or to improve a receipe over many tries it is essential to capture several readings during and after the brewing process which requires one to buy costly sensors or measuring gadgets. We wanted to check if we can eliminate any sensors or measuring gadgets. Particularly we wanted to analyze and see if we can make predictions of one of the parameters namely - ABV - from other readings and do away with any measuring gadgets for it.
+There are many brew enthusiast who like to brew beer in home. To make a good beer or to improve a receipe over many tries it is essential to capture several readings during and after the brewing process which requires one to buy costly sensors or measuring gadgets. Through this study we want to check if we can eliminate any sensors or measuring gadgets. Particularly we intend to analyze and see if we can make predictions of one of the parameters namely - ABV - from other readings and do away with any measuring gadgets for it.
 
 ---
 
