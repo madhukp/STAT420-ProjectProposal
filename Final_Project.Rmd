@@ -1,0 +1,122 @@
+---
+title: <font size="6" color="#002060">**Statistical study of Alcohol By Volume (ABV) in Craft Beer**</font>
+author: "STAT 420, Summer 2018 - Final Project"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document: 
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+
+---
+
+---
+
+## 1. Group Information
+
+This study is conducted by the following members from <u>**Group #29**</u>:
+
+ - Apoorva H Srinivasa (NetID: **apoorva6**)
+ - Madhukar K P (NetID: **mk30**)
+ - Nicholas Reinicke (NetID: **ndr3**)
+ - Raymond Ordona (NetID: **rordona2**)
+
+---
+
+## 2. Introduction
+
+There are many brew enthusiast who like to brew beer at home. To make a good beer or to improve a recipe over many tries, it is essential to capture several readings during and after the brewing process which requires one to buy costly sensors or measuring gadgets. We wanted to check if we can eliminate any sensors or measuring gadgets that hopefully may suggest cost saving. Particularly we wanted to analyze and see if we can make predictions of one of the parameters namely - ABV - from other readings and do away with any measuring gadgets for it.
+
+As part of this project we intend to study the factors in brewing process that affect the alcohol content in craft beers and also make best predictions on the alcohol content based on the affecting factors. 
+
+---
+
+## 3. Methods
+
+In this section we'll first load the raw data, perform necessary preprocessing and analyze each attributes in the dataset. We'll use visualizations like histogram and boxplots to explore and understand the domain and distribution of each attributes. We'll then define the methods that will be used to build the models and metrics that shall be used to evaluate the different models and to pick the best model. And finally we'll implement different models, refine them as needed and gather metrics for them.
+
+---
+
+### 3.1 Data Preparation
+
+Load raw data. view sample records, cleanup unncessary columns, remove any nulls or unwanted values
+
+---
+
+### 3.2 Data Exploration
+
+Statistical exploration - Check domain and range of each attribute, max, min, mean, standard deviation and see if anything clicks here.
+
+---
+
+### 3.3 Exploratory Visualization
+
+Visual exploration: draw histograms, boxplots, pairs and comment on data distribution.
+
+---
+
+### 3.4 Methodology & Metrics
+
+List out all the methods that will be used, list out math equations if needed. Define and list out all metrics that will be used to evaluate the models - R-squared, RMSE, etc. what all significance levels will be used etc.
+
+---
+
+### 3.5 Implementation
+
+Split the data into train and test set. Apply all the methods and capture the metrics for each model on train and test dataset, have these stored in a final dataframe.
+
+---
+
+### 3.6 Model(s) Refinement
+
+See if any refinements are possible, example check if removing outliers improves the models performance on test dataset.
+
+---
+
+## 4. Results
+
+In this section we'll provide metrics table and any visualizations on the metrics.
+
+---
+
+### 4.1 Statistical Summary
+
+Provide statistical summaries here and detail them.
+
+---
+
+### 4.2 Graphical Summary
+
+Provide Graphical summaries here and detail them.
+
+---
+
+## 5. Discussion
+
+---
+
+### 5.1 Reflection on Results
+
+Discuss the results here suggest future enhancements.
+
+---
+
+### 5.2 Conclusion
+
+A final concluding statement
+
+---
+
+## 6. Appendix
+
+---
+
+### 6.1 Appendix - A
+
+---
+
+### 6.2 Appendix - B
+
+---
+---
