@@ -139,7 +139,7 @@ Here, we will be using a 10-k fold validation or a 1-out validation. The train_s
 One important note: while there is no sign of collinearity between ABV and FG, we have decided to exclude FG in our models as ABV is directly derived from FG. We will also exclude IBU (which has to do with measuring bitterness of beer)
 
 ```{r}
-pairs(train_set[, c("ABV", "FG")])
+pairs(train_set[, c("ABV", "FG")], col = "#004e66", pch = 20)
 ```
 
 
@@ -180,30 +180,46 @@ The following helper function (**residual_fitted_plot**) is used to plot residua
 
 
 ```{r}
+library(ggplot2)
 
 # This function plots the residual-to-fitted chart. 
 # If outlier is set to TRUE, it will return dataset without the outliers;
 # otherwise, it returns the complete dataset.
 residual_fitted_plot = function(model, data,  outlier, threshold = 0) {
   
-  plot(fitted(model), resid(model), xlab="Fitted Values", ylab="Residual", 
-       main="Alcohol By Volume (Residual-vs-Fitted Plot)", col="dodgerblue")
-  abline(h=0,  col = "darkorange", lwd=2)
+  plot = ggplot(model) +
+          geom_point(aes(x = .fitted, y = .resid), colour = "#004e66") +
+          geom_abline(slope = 0, intercept = 0) +
+          labs(x = "Fitted", y = "Residual", title = "Fitted vs Residuals")
 
   if (outlier == TRUE ) {
+    
     # Plotting outliers
     outliers = resid(model) < threshold
     outlier_index = which( outliers )
     fitted_outliers = fitted(model)[outlier_index]
     resid_outliers = resid(model)[outlier_index]
     
-    points(fitted_outliers, resid_outliers, lwd=2, col="red")
-    text(fitted_outliers, resid_outliers, labels = round(outlier_index, 3), pos = 2)
+    outlier_plot = data.frame(fitted = fitted(model)[outlier_index], 
+                              resid = resid(model)[outlier_index], 
+                              outliers = outlier_index)
+    
+    plot = plot + geom_point(data = outlier_plot, aes(x = fitted, y = resid, colour = "red")) + 
+      scale_color_discrete(name = "", labels = "Outliers") +
+      geom_text(data = outlier_plot, 
+                aes(x = fitted, y = resid, label = outliers), 
+                check_overlap = TRUE, 
+                hjust = 0, 
+                nudge_x = 0.5)
+    
+    print(plot)
     
     #Return dataset without the outliers
     return ( data[-outlier_index,] )
     
   }
+  
+  print(plot)
   
   return ( data )
 }
@@ -507,9 +523,11 @@ round(as.vector(head(predicted_abv, 20)),2)
 Looking at predicted values vs actual values
 
 ```{r}
-plot(predicted_abv, actual_abv, col="dodgerblue", ylab="Actual", 
-      xlab="Predicted", main="Actual vs Predicted for Test Data")
-abline(0,1, col="darkorange", lwd=2)
+df = data.frame(x = predicted_abv, y = actual_abv)
+ggplot(df, aes(x = x, y = y)) +
+  geom_point(colour = "#004e66") +
+  geom_abline(slope = 1, intercept = 0) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Fitted vs Actual Values")
 ```
 
 
@@ -578,8 +596,8 @@ Normal Q-Q Plot:
 
 ```{r}
 # Let's draw Normal Q-Q plot for the original model3
-qqnorm(resid(model3), col = "darkgrey")
-qqline(resid(model3), col = "dodgerblue", lwd = 2)
+qqnorm(resid(model3), col = "#004e66", pch = 20)
+qqline(resid(model3), col = "black", lwd = 2)
 ```
 
 Still within the range of the residual range. The residuals are normally distributed (symmetric), but we are not going to put penalty on the outliers ( tails moving away from the blue line).
