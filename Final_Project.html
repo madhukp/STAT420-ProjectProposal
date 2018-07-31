@@ -701,7 +701,7 @@ rownames(resp_num_stats) = row_names
 #resp_num_stats
 
 
-# descriptive stats for numberic predictor attributes
+# descriptive stats for numeric predictor attributes
 pred_num_col = c(&quot;Size&quot;,&quot;OG&quot;,&quot;IBU&quot;,&quot;Color&quot;,&quot;BoilSize&quot;,&quot;BoilTime&quot;, &quot;BoilGravity&quot;,&quot;Efficiency&quot;)
 pred_num_stats = data.frame(matrix(NA, ncol=length(pred_num_col), nrow=6))
 colnames(pred_num_stats) = pred_num_col
@@ -781,7 +781,7 @@ Max
 </tr>
 </tbody>
 </table>
-<p>Below is the descriptive statistics for numberic predictor attributes,</p>
+<p>Below is the descriptive statistics for numeric predictor attributes,</p>
 <table class="table table-striped" style="width: auto !important; ">
 <thead>
 <tr>
@@ -1211,7 +1211,7 @@ system.time((
 model1_srch = step( start_model, direction = &quot;backward&quot;, trace=0) 
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-##   16.60    1.15   17.77</code></pre>
+##   16.47    1.04   17.63</code></pre>
 <p>Note: running the search takes approximately between 27 seconds to 2 minutes.</p>
 <p><strong>Plotting and Validating outliers:</strong></p>
 <pre class="r"><code># Plot residual-fitted, and return dataset without outliers.
@@ -1272,7 +1272,7 @@ system.time((
 model2_srch = step( start_model, direction = &quot;backward&quot;, trace=0) 
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-##    2.75    0.21    3.01</code></pre>
+##    2.39    0.19    2.58</code></pre>
 <p>Note: running the search takes approximately between 2.829 seconds to 5 seconds.</p>
 <p><strong>Plotting and Validating outliers:</strong></p>
 <pre class="r"><code># Plot residual-fitted, and return dataset without outliers.
@@ -1320,7 +1320,7 @@ start_model = summary(regsubsets(ABV ~ (. -FG - IBU )^2 , data = train_set, real
 )
 )</code></pre>
 <pre><code>##    user  system elapsed 
-##    0.43    0.01    0.44</code></pre>
+##    0.36    0.04    0.42</code></pre>
 <pre class="r"><code># Derive coefficients/variables based on the highest Adjusted R-squared.
 best_r2_ind = which.max(start_model$adjr2)
 coef = names( which(start_model$which[best_r2_ind, ]) )

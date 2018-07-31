@@ -156,7 +156,7 @@ rownames(resp_num_stats) = row_names
 #resp_num_stats
 
 
-# descriptive stats for numberic predictor attributes
+# descriptive stats for numeric predictor attributes
 pred_num_col = c("Size","OG","IBU","Color","BoilSize","BoilTime", "BoilGravity","Efficiency")
 pred_num_stats = data.frame(matrix(NA, ncol=length(pred_num_col), nrow=6))
 colnames(pred_num_stats) = pred_num_col
@@ -188,7 +188,7 @@ kable(resp_num_stats) %>%
 ```
 
 
-Below is the descriptive statistics for numberic predictor attributes,
+Below is the descriptive statistics for numeric predictor attributes,
 
 ```{r warning=FALSE, echo=FALSE}
 library(kableExtra)
