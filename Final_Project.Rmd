@@ -24,6 +24,9 @@ This study is conducted by the following members from <u>**Group #29**</u>:
 
 ---
 
+---
+
+
 ## 2. Introduction
 
 There are many brew enthusiasts who like to brew beer at home. To make a good beer or to improve a recipe over many tries, it is essential to capture readings for several attributes during and after the brewing process which requires one to buy costly sensors or measuring gadgets. Using *Applied Statistics with R* we wanted to check if we can analyze and predict any of the attributes of the beer and hopefully suggest cost savings by eliminating any sensors or measuring gadgets for it. Or even predict any attribute of the final product in the early stages of brewing process so that any tweaks can be made to the recipe based on the knowledge of the predictions of the final product.
@@ -34,6 +37,9 @@ For this project, we are using dataset sourced from [Brewer's Friend Beer Recipe
 
 ---
 
+---
+
+
 ## 3. Methods
 
 In this section we'll first load the raw data, perform necessary preprocessing and analyze each attributes in the dataset. We'll use visualizations like histogram and boxplots to explore and understand the domain and distribution of each attributes. We'll then define the methods that will be used to build the models and metrics that shall be used to evaluate the different models and to pick the best model. And finally we'll implement different models, refine them as needed and gather metrics for them.
@@ -42,32 +48,240 @@ In this section we'll first load the raw data, perform necessary preprocessing a
 
 ### 3.1 Data Definition and Preparation
 
-The raw dataset has a total of 23 attributes. The response variable - `ABV` is a *real* variable. Below are all the other attributes (predictors) and their definitions. Attributes that are of no importance for statistical study and which will not be used are also indicated in this table. 
+<font size="3"><u>**Data Definition: **</u></font>
 
-[Have copied from proposal, will add additional column and rows later]
+The raw dataset has a total of 23 attributes. The response variable - `ABV` is a *real* variable. Below table lists all the other attributes (predictors) and their definitions. Attributes that are of no importance for statistical study and which will not be used are also indicated here. 
 
-| Attribute     | Domain      | Description                                                                    |
-|---------------|-------------|--------------------------------------------------------------------------------|
-| `SugarScale`  | Categorical | Scale to determine the concentration of dissolved solids in wort |
-| `BrewMethod`  | Categorical | Various techniques for brewing (Ex: All Grain) |
-| `BoilTime`    | Real        | Time wort is boiled |
-| `BoilGravity` | Real        | Specific gravity of wort before the boil |
-| `Color`       | Real        | Color using Reference Method - light to dark ex. 40 = black |
-| `Efficiency`  | Real        | Beer mash extraction efficiency - extracting sugars from the grain during mash |
-| `OG_Specific`  | Real        | Specific gravity of wort before fermentation |
-| `FG_Specific`  | Real        | Specific gravity of wort after fermentation |
+Now, in below table it's intuitive to notice that attributes like IDs and free-form text are straight away ignored for this study. One particular attribute which we have decided not to use and to which we would like to call upon attention is - `FG`. This attribute is captured after the brewing process and our response variable `ABV` is derived directly from it and to be inline with the objective stated in the [introduction](#introduction) section to predict `ABV` before the completion of brewing process we have decided to not use it in our prediction model.
+
+| Sl# | Attribute | Domain | Used for Study? | Description                                                                    |
+|:---:|-----------|:------:|:---------------:|--------------------------------------------------------------------------------|
+| 01| `SugarScale`  |   Categorical  |  <font color="green">Yes</font>  |  Scale to determine the concentration of dissolved solids in wort  |  
+| 02| `BrewMethod`  |   Categorical  |  <font color="green">Yes</font>  |  Various techniques for brewing (Ex: All Grain)  |  
+| 03| `Size(L)`  |   Real  |  <font color="green">Yes</font>  |  Amount brewed for recipe listed  |  
+| 04| `OG`  |   Real  |  <font color="green">Yes</font>  |  Specific gravity of wort before fermentation  |  
+| 05| `IBU`  |   Real  |  <font color="green">Yes</font>  |  International Bittering Units  |  
+| 06| `Color`  |   Real  |  <font color="green">Yes</font>  |  Color using Reference Method - light to dark ex. 40 = black  |  
+| 07| `BoilSize`  |   Real  |  <font color="green">Yes</font>  |  Fluid at beginning of boil  |  
+| 08| `BoilTime`  |   Real  |  <font color="green">Yes</font>  |  Time wort is boiled  |  
+| 09| `BoilGravity`  |   Real  |  <font color="green">Yes</font>  |  Specific gravity of wort before the boil  |  
+| 10| `Efficiency`  |   Real  |  <font color="green">Yes</font>  |  Beer mash extraction efficiency - extracting sugars from the grain during mash  |  
+| 11| `FG`  |   Real  |  <font color="darkred">No</font>  |  Specific gravity of wort after fermentation  |  
+| 12| `Name`  |   String  |  <font color="darkred">No</font>  |  Descriptive Name of Beer  |  
+| 13| `URL`  |   String  |  <font color="darkred">No</font>  |  Location of recipe webpage  |  
+| 14| `Style`  |   String  |  <font color="darkred">No</font>  |  Type of brew  |  
+| 15| `PitchRate`  |   String  |  <font color="darkred">No</font>  |  Yeast added to fermentor (Data is not complete, has many non-numeric values)  |  
+| 16| `PrimaryTemp`  |   String  |  <font color="darkred">No</font>  |  Temperature at fermenting stage (Data is not complete, has many non-numeric values)  |  
+| 17| `PrimingMethod`  |   String  |  <font color="darkred">No</font>  |  Free form text detailing the method used for priming  |  
+| 18| `PrimingAmount`  |   String  |  <font color="darkred">No</font>  |  Free form text indicating the amount of priming  |  
+| 19| `MashThickness`  |   String  |  <font color="darkred">No</font>  |  Amount of water  (Data is not complete, has many non-numeric values)  |  
+| 20| `BeerID`  |   Real  |  <font color="darkred">No</font>  |  Record ID in the dataset  |  
+| 21| `StyleID`  |   Real  |  <font color="darkred">No</font>  |  Numeric ID for type of brew  |  
+| 22| `UserId`  |   Real  |  <font color="darkred">No</font>  |  Unique Id of user who provided or updated the receipe  |  
+ 
+
+<font size="3"><u>**Data Preparation: **</u></font>
+
+Having gone through the definition of attributes and after cursory checks on the dataset we noticed that there are few records with nulls, `NaN`, `NA` or `N/A`. So as a next step we will pre-process the raw dataset by cleaning up unwanted columns and rows with unwanted values. 
+
+Below are the detailed tasks performed as part of data pre-processing: 
+
+- Read raw dataset
+- Remove unwanted columns
+- Remove rows with nulls/`NaN`/`NA`/`N/A`
+- Rename the column name `Size(L)` to `Size` for ease of reference.
+- Coerce `SugarScale` and `BrewMethod` into factor variables.
+- Remove spaces in the levels of categorical attributes `SugarScale` and `BrewMethod`for easy representation in model summary (specifically interaction models).
+- Coerce `BoilGravity` into a numerical attribute
+- Reorder the row numbers (names)
+
+Below is the `R` code block for the tasks(pseudocode) described above,
+
+```{r}
+# read raw dataset
+beer_data_raw = read.csv('recipeData.csv')
+
+# remove unwanted columns and rows with nulls/`NaN`/`NA`/`N/A`
+beer_data = subset(beer_data_raw, 
+                   subset = beer_data_raw$ABV != "N/A" & beer_data_raw$BoilGravity != "N/A",
+                   select = c("ABV", "SugarScale", "BrewMethod", "Size.L.", "OG", "IBU", 
+                              "Color", "BoilSize","BoilTime", "BoilGravity", "Efficiency"))
+
+# rename column name
+colnames(beer_data)[4] = "Size"
+
+# coerce `SugarScale` and `BrewMethod` into factor variables
+beer_data$SugarScale = as.factor(beer_data$SugarScale)
+beer_data$BrewMethod = as.factor(beer_data$BrewMethod)
+
+# remove spaces in the levels for factor variables
+levels(beer_data$SugarScale) = gsub(" ", "", levels(beer_data$SugarScale), fixed = TRUE)
+levels(beer_data$BrewMethod) = gsub(" ", "", levels(beer_data$BrewMethod), fixed = TRUE)
+
+# coerce BoilGravity into a numerical attribute
+beer_data$BoilGravity = as.numeric(beer_data$BoilGravity)
+
+# reorder row numbers
+rownames(beer_data) = c(1:nrow(beer_data))
+
+```
+
+Number of records in the dataset before pre-processing (raw dataset) : $`r nrow(beer_data_raw)`$
+
+Number of records in the dataset after pre-processing (clean dataset): $`r nrow(beer_data)`$
+
+Below are the first few records of the prepped dataset,
+
+```{r echo = FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+kable(beer_data[1:7,]) %>%
+  kable_styling(bootstrap_options = "striped", position = "left")
+```
+
+---
+
+### 3.2 Data Exploration
+
+In this section we examine the descriptive statistics like min, max, median, mean, etc., of numeric attributes and count of levels for categorical attributes to understand the domain, range and distribution for each. This can be helpful later in deciding if transformations need to be applied on repsone or any predictors.
+
+Below `R` code computes the descriptive statistics described above.
+
+```{r}
+# descriptive stats for response attribute
+row_names = c("Min", "1st Quartile", "Median", "Mean", "3rd Quartile", "Max")
+resp_num_stats = cbind(summary(beer_data$ABV))
+colnames(resp_num_stats) = c("ABV")
+rownames(resp_num_stats) = row_names
+#resp_num_stats
 
 
-Below are the steps performed as part of data preparation/pre-processing,
+# descriptive stats for numberic predictor attributes
+pred_num_col = c("Size","OG","IBU","Color","BoilSize","BoilTime", "BoilGravity","Efficiency")
+pred_num_stats = data.frame(matrix(NA, ncol=length(pred_num_col), nrow=6))
+colnames(pred_num_stats) = pred_num_col
+rownames(pred_num_stats) = row_names
+for(i in 1:length(pred_num_col)){
+  pred_num_stats[,i] = as.vector(summary(beer_data[,c(pred_num_col[i])]))
+}
+#pred_num_stats
 
-- Firstly, read raw dataset.
-- Removed unwanted columns.
-- Removed rows with nulls/`NaN`/`NA`/`N/A` (or any other invalid records).
-- (anything else?)
-- (anything else?)
-**[Lets not split the data here itself, we'll save it for Methodologies and Metrics section.]**
 
-Below is the `R` code for the pseudo code described above,
+# descriptive stats for categorical predictor attributes
+SugarScale_lvls = as.data.frame(table(beer_data$SugarScale))
+colnames(SugarScale_lvls) = c("Levels", "Frequency") 
+BrewMethod_lvls = as.data.frame(table(beer_data$BrewMethod))
+colnames(BrewMethod_lvls) = c("Levels", "Frequency") 
+#SugarScale_lvls
+#BrewMethod_lvls
+```
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4)
+```
+
+Below is the descriptive statistics for response attribute `ABV`, 
+
+```{r warning=FALSE, echo=FALSE}
+kable(resp_num_stats) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+```
+
+
+Below is the descriptive statistics for numberic predictor attributes,
+
+```{r warning=FALSE, echo=FALSE}
+library(kableExtra)
+kable(pred_num_stats) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+```
+
+Below is the descriptive statistics for categorical attribute - `SugarScale`,
+```{r warning=FALSE, echo=FALSE}
+library(kableExtra)
+kable(SugarScale_lvls) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+```
+
+Below is the descriptive statistics for categorical attribute - `BrewMethod`,
+```{r warning=FALSE, echo=FALSE}
+library(kableExtra)
+kable(BrewMethod_lvls) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+```
+
+**Inferences:**
+
+From the above descriptive statistics we can make below inferences,
+
+- Response attribute does not stretch over several orders of magnitude, so transformations (like log()) on it is unlikely to help.
+- Similar to response attribute, none of the numeric attributes stretch over several orders of magnitude, so transformations (like log()) on them too is unlikely to help.
+- Categorical attributes' levels look good and does not raise any concern.
+
+---
+
+### 3.3 Exploratory Visualization
+
+In this section we'll plot histogram for each of the attributes in the prepped data to further stress the points made in preivous section and also to see if we can catch any outliers for individual attributes and consider - if or as needed - to remove them for better prediction performance. We'll also visually check collinearity by plotting a matrix of scatterplots for every pair of attributes in the preppred dataset. This will aid in dropping some of the highly collinear attributes to reduce time during model selection procedures like backward-AIC, etc.
+
+Below is the `R` code for plotting histogram for individual attributes,
+
+```{r}
+# histogram plots
+# TBD
+# TBD
+
+# matrix of scatterplots
+# pairs()
+# TBD
+```
+
+[graphs will follow here]
+
+**Inferences:**
+
+From the above visuals we can make below inferences,
+
+- tbd tbd tbd
+- tbd tbd tbd
+- tbd tbd tbd
+
+---
+
+### 3.4 Methodology & Metrics
+
+Described in this section are the high level steps that shall be taken to fit models and the metrics that shall be captured for each. Models will later be compared based on the metrics and a best one will be picked.
+
+<u>**High Level Implemention Approach/Steps: **</u>
+
+- Split data into train and test set; 20% of randomly picked data shall be set asside as test data and remaining 80% as test data. Models will be fit using train data and their performance on test data shall be captured. Metrics captured on the test data will mainly decide the best model.
+- Fit different models using below approachs,
+    + Use an additive model using all attributes as starting model and do backward search using AIC and BIC
+    + Use a model with all two-way interactions along with their main effects as starting model and do backward search using AIC and BIC
+    + Use a model with all three-way interactions along with their main effects as starting model and do backward search using AIC and BIC
+    + Use a model with two-degree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC
+    + Use a model with all two-way interactions and two-degree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC.
+- For each model capture the metrics defined in next sub-section on train and test data.
+
+<u>**Metrics:**</u>
+
+- RMSE on train data
+- RMSE on test data
+- LOOCV.RMSE
+- R-squared
+- Adj-R-squared
+- Error pecentage
+
+
+
+
+---
+
+### 3.5 Implementation
+
+*[Notes: Split the data into train and test set. Apply all the methods and capture the metrics for each model on train and test dataset, have these stored in a final dataframe.]*
+
+The following helper function (**residual_fitted_plot**) is used to plot residual-vs-fitted and outliers.  This function accepts model, data, outlier, and threshold as input parameters. The outlier parameter is BOOLEAN. If set to TRUE, it will use the threshold parameter to compute and plot for the outliers. The function will return the data set ( without the outliers if the outlier parameter and threshold input are used).
 
 ```{r, echo = FALSE}
 library("leaps")
@@ -78,7 +292,6 @@ options(scipen = 1, digits = 3, width = 80, fig.align = "center")
 
 beer = read.csv('recipeData3.csv')
 beer$Style = as.factor(beer$Style)
-
 
 coln = c('OG', 'FG', 'ABV', 'IBU', 'Color', 'Efficiency',
          'BoilGravity',  'BoilTime', 'SugarScale', 'BrewMethod')
@@ -100,83 +313,6 @@ nrow(train_set)
 nrow(test_set)
 
 ```
-
-
-Below is an example of the dataset. Note that 'Style' and 'StyleID' are not part of predictors as they are used more for annotation.
-
-
-|	  | Style              | StyleID | OG	   | FG	   | IBU   | Color |	Efficiency	| BoilGravity	| BoilTime	| SugarScale	| BrewMethod | ABV
-|---|--------------------|--------:|------:|------:|------:|------:|-------------:|-----------:|----------:|-------------|------------|---:
-| 1	| Cream Ale          |  45     | 1.055 | 1.013 | 17.65 | 4.83	 | 70	          | 40      |	75	| Specific Gravity |	All Grain | `5.48`
-| 5	| Belgian Blond Ale  |  20	   | 1.060 | 1.010 | 17.84 | 4.57	 | 72	          | 52	    | 90	| Specific Gravity |	All Grain | `6.48`
-| 6	| American Pale Ale	 |  10	   | 1.055 | 1.013 | 40.12 | 8.00	 | 79	          | 49	    | 70	| Specific Gravity |	All Grain | `5.58`
-| 8	| Cream Ale	         |  45	   | 1.054 | 1.014 | 19.97 | 5.94	 | 70	          | 42	    | 75	| Specific Gravity |	All Grain | `5.36`
-| 9	| Robust Porter	     | 129	   | 1.060 | 1.016 | 31.63 | 34.76 | 73	          | 44	    | 75	| Specific Gravity |	All Grain | `5.77`
-
-
----
-
-### 3.2 Data Exploration
-
-*[For notes only, will be removed: Statistical exploration - Check domain and range of each attribute, max, min, mean, standard deviation and see if anything clicks here]*
-
-Our study starts by performing data preparation work. First, we have omitted observations that have missing values for the response - ABV - and one of the predictors - BoilGravity. Secondly, we have converted BoilGravity from categorical to numeric/continuous. Lastly, we have split the 73.8k observations into two sets:  one for training a model, the other for testing the model. This will be useful in the discussion section where we will attempt to predict the alcohol content ( by volume ) of beers from the test set, pretending that we have brewed them at home.
-
-Here, we will be using a 10-k fold validation or a 1-out validation. The train_set has 63.7K randomly sampled observations (90%) and the test_set has the rest of random observations, 7k (10%), using a random seed of 142.
-
-
-
-
-
-
----
-
-### 3.3 Exploratory Visualization
-
-*[Notes: Visual exploration: draw histograms, boxplots, pairs and comment on data distribution]*
-
-
-One important note: while there is no sign of collinearity between ABV and FG, we have decided to exclude FG in our models as ABV is directly derived from FG. We will also exclude IBU (which has to do with measuring bitterness of beer)
-
-```{r}
-pairs(train_set[, c("ABV", "FG")])
-```
-
-
----
-
-### 3.4 Methodology & Metrics
-
-*[Notes: List out all the methods that will be used, list out math equations if needed. Define and list out all metrics that will be used to evaluate the models - R-squared, RMSE, etc. what all significance levels will be used etc.]*
-
-
-Of the methods we have tested, we have narrowed our efforts down to using a.) AIC as criteria in selecting a model and comparing both the STEPWISE search method; and b.) the EXHAUSTIVE search method.
-
-**Also, we have chosen to take three studies in this project:**
-
-Note that all our test excluded FG ( we could also have removed that in our data preparation step).
-
-**Study 1:** Using AIC backward Stepwise Search with **additive model** and **two-way interaction** across the additive model.
-
-* ABV ~ (. -FG - IBU )^2
-
-**Study 2:** Using AIC backward Stepwise Search with **additive model** and **two-way interaction** for only the categorical predictors.
-
-* ABV ~ (. - FG - IBU) +  (OG + Color + Efficiency + BoilGravity + BoilTime ) * (SugarScale + BrewMethod)
-
-**Study 3:** Using Exhaustive Search and **Parameterization (with Dummy Variables)**.
-
-* ABV ~ (. -FG - IBU)^2
-
-
-
----
-
-### 3.5 Implementation
-
-*[Notes: Split the data into train and test set. Apply all the methods and capture the metrics for each model on train and test dataset, have these stored in a final dataframe.]*
-
-The following helper function (**residual_fitted_plot**) is used to plot residual-vs-fitted and outliers.  This function accepts model, data, outlier, and threshold as input parameters. The outlier parameter is BOOLEAN. If set to TRUE, it will use the threshold parameter to compute and plot for the outliers. The function will return the data set ( without the outliers if the outlier parameter and threshold input are used).
 
 
 ```{r}
