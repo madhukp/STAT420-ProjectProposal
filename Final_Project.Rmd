@@ -258,352 +258,269 @@ Described in this section are the high level steps that shall be taken to fit mo
 - Fit different models using below approachs,
     + Use an additive model using all attributes as starting model and do backward search using AIC and BIC
     + Use a model with all two-way interactions along with their main effects as starting model and do backward search using AIC and BIC
-    + Use a model with all three-way interactions along with their main effects as starting model and do backward search using AIC and BIC
     + Use a model with two-degree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC
-    + Use a model with all two-way interactions and two-degree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC.
+    + Use a model with all two-way interactions and two-dgree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC.
 - For each model capture the metrics defined in next sub-section on train and test data.
+- We'll then pick the best model based on metrics and further tune or diagnose it for leverages, outliers and influencial observations.
 
 <u>**Metrics:**</u>
+
+Below are the metrics that shall be captured for each of the models that we fit. Argument to pick the best model will be made based on some or all of these metrics.
 
 - RMSE on train data
 - RMSE on test data
 - LOOCV.RMSE
 - R-squared
 - Adj-R-squared
-- Error pecentage
-
-
-
+- Error percentage on train data
+- Error percentage on test data
+- Time taken to search the best model (in minutes)
 
 ---
 
 ### 3.5 Implementation
 
-*[Notes: Split the data into train and test set. Apply all the methods and capture the metrics for each model on train and test dataset, have these stored in a final dataframe.]*
+This section includes the detailed `R` code implementation following the approach described in previous section.
 
-The following helper function (**residual_fitted_plot**) is used to plot residual-vs-fitted and outliers.  This function accepts model, data, outlier, and threshold as input parameters. The outlier parameter is BOOLEAN. If set to TRUE, it will use the threshold parameter to compute and plot for the outliers. The function will return the data set ( without the outliers if the outlier parameter and threshold input are used).
+<br>
 
-```{r, echo = FALSE}
-library("leaps")
-options(scipen = 1, digits = 3, width = 80, fig.align = "center")
-```
+**Train and Test Split: **
+
+First we'll split the dataset into train and test data. We'll set a seed and randomly pick 20% of data and set it asign as test data and will use rest 80% as the train data. Below is the `R` code for same.
 
 ```{r}
-
-beer = read.csv('recipeData3.csv')
-beer$Style = as.factor(beer$Style)
-
-coln = c('OG', 'FG', 'ABV', 'IBU', 'Color', 'Efficiency',
-         'BoilGravity',  'BoilTime', 'SugarScale', 'BrewMethod')
-
-
-dataset = subset( beer[, coln], !BoilGravity %in% c("NA","N/A" ) & !ABV %in% c("NA","N/A"))
-dataset[, c("BoilGravity")] = as.numeric(dataset[, c("BoilGravity")])
-
-
-set.seed(142)
-n = nrow(dataset)
-ind = sample(1:nrow(dataset), n * 9/10, replace = FALSE, prob = NULL)
-
-train_set = dataset[ind,]
-test_set = dataset[-ind,]
-
-nrow(beer)
-nrow(train_set)
-nrow(test_set)
+# set seed to project group id
+set.seed(29)
+beer_data_trn_idx  = sample(nrow(beer_data), size = trunc(0.80 * nrow(beer_data)))
+beer_data_trn = beer_data[beer_data_trn_idx, ]
+beer_data_tst = beer_data[-beer_data_trn_idx, ]
 
 ```
 
+Number of records in the train dataset: $`r nrow(beer_data_trn)`$
+
+Number of records in the test dataset : $`r nrow(beer_data_tst)`$
+
+<br>
+
+**Build generic function to fit models and compute metrics: **
+
+Now, we'll build a generic fuction which will below tasks,
+
+- Take as inputs,
+    + `strt_model`: Starting model for search
+    + `dir`: Direction of search
+    + `crit`: Selection metric to be used - "AIC" or "BIC"
+- Then, identify the model using the search method dicated by the input parameters.
+- Finally computeS below metrics and return a named vector of these metrics.
+    + `strt_model`: Starting model for search
+    + `dir`: Direction of search
+    + `crit`: Selection metric to be used - "AIC" or "BIC"
+    
+Below is the `R` code for the function just described,
 
 ```{r}
-
-# This function plots the residual-to-fitted chart. 
-# If outlier is set to TRUE, it will return dataset without the outliers;
-# otherwise, it returns the complete dataset.
-residual_fitted_plot = function(model, data,  outlier, threshold = 0) {
+# function that takes start model and search criteria and return the best model from search along with metrics for it
+func_fit_get_met = function(strt_model,
+                            dir = "backward", 
+                            crit = "AIC"){
   
-  plot(fitted(model), resid(model), xlab="Fitted Values", ylab="Residual", 
-       main="Alcohol By Volume (Residual-vs-Fitted Plot)", col="dodgerblue")
-  abline(h=0,  col = "darkorange", lwd=2)
-
-  if (outlier == TRUE ) {
-    # Plotting outliers
-    outliers = resid(model) < threshold
-    outlier_index = which( outliers )
-    fitted_outliers = fitted(model)[outlier_index]
-    resid_outliers = resid(model)[outlier_index]
-    
-    points(fitted_outliers, resid_outliers, lwd=2, col="red")
-    text(fitted_outliers, resid_outliers, labels = round(outlier_index, 3), pos = 2)
-    
-    #Return dataset without the outliers
-    return ( data[-outlier_index,] )
-    
-  }
+  # identify the k value for step search
+  if(crit == "AIC"){
+    kk = 2
+  } else if(crit == "BIC"){
+    kk = log(nrow(beer_data_trn))
+  } 
   
-  return ( data )
-}
-
-```
-
-The following helper function (**result_metrics**) is used to capture R2, adjusted R2, RMSE, number of coefficients used, and  list of coefficients that are significant based of a given alpha.
-
-```{r}
-
-# This function returns numeric results (R2, adjusted R3, RMSE, no of coefficients, no of
-# non-significant coefficients.)
-result_metrics = function(model, alpha) {
-  # Get R2  
-  model_r2 = round( summary(model)$r.squared, 2)
-  # Get Adjusted R2
-  model_adj_r2 = round( summary(model)$adj.r.squared, 2)
-  # Get RMSE
-  model_rmse = round( sqrt(mean(resid(model)^2)), 2 )
-  # Get number of coefficients that are significant at .1
-  coef = summary(model)$coefficients
-  model_coef_cnt = nrow(coef) - 1
-  model_not_signif_coef = names( which( coef[,"Pr(>|t|)"] > alpha ) )
-  model_not_sigif_coef_cnt = length(model_not_signif_coef)
-  list( "r2" = model_r2,
-        "adjusted_r2" = model_adj_r2,
-        "rmse" = model_rmse,
-        "coef_count" = model_coef_cnt,
-        "not_sig_coef_count" = model_not_sigif_coef_cnt,
-        "not_sig_coef" = model_not_signif_coef )
+  # Perform variable selection using the critera defined in input
+  strt_time = Sys.time()
+  model_bst = step(strt_model, direction = dir, trace = 0, k = kk)
+  end_time  = Sys.time()
+  
+  # compute metrics and return a named vector of metrics
+  return(
+    list("model_bst" = model_bst,
+         "metrics_v" = c("rmse_trn"     = mean(resid(model_bst)^2),
+                         "rmse_tst"     = mean((predict(model_bst, newdata = beer_data_tst) - beer_data_tst$ABV)^2),
+                         "loocv_rmse"   = sqrt(mean((resid(model_bst) / (1 - hatvalues(model_bst))) ^ 2)),
+                         "r2"           = summary(model_bst)$r.squared,
+                         "adj_r2"       = summary(model_bst)$adj.r.squared,
+                         "prct_err_trn" = (1/nrow(beer_data_trn)) * 
+                                          sum( abs(predict(model_bst) - beer_data_trn$ABV) / predict(model_bst) ) * 100,
+                         "prct_err_tst" = (1/nrow(beer_data_tst)) * 
+                                          sum( abs(predict(model_bst, newdata = beer_data_tst) - beer_data_tst$ABV) / 
+                                                 predict(model_bst, newdata = beer_data_tst) ) * 100,
+                         "trn_time"     = end_time - strt_time
+           )))
 }
 ```
 
+<br>
+
+**Fit different starting models and search best one for each using backward AIC and BIC: **
+
+With the generic fucntion defined, now we'll fit 4 starter models defined in the section [Methodology](#methodology-metrics) section and search two best models using the function, one with backward AIC search and another with backward BIC search. Along they way we'll also catpure the metrics returned by the function in a dataframe for present it in [results](#results) section. This will result in 8 models and metrics for each of them.
+
+```{r}
+### Define starter models ### 
+
+# additive starter model
+beer_m1_add  = lm(ABV ~ ., data = beer_data_trn)
+
+# two-way interactions starter model
+beer_m2_int2 = lm(ABV ~ (.)^2, data = beer_data_trn)
+
+# two-degree polynomial starter model
+beer_m3_ply2 = lm(ABV ~ (.) + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + I(BoilTime^2) +
+                    I(BoilGravity^2) + I(Efficiency^2), data = beer_data_trn)
+
+# starter model which encompasses all the effects of above model
+beer_m4_all  = lm(ABV ~ (.) + (.)^2 + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + I(BoilTime^2) +
+                    I(BoilGravity^2) + I(Efficiency^2), data = beer_data_trn)
+```
+
+```{r}
+### Search best models for each using backward AIC and BIC and store the models in a list ###
+beer_m1_add_bst_AIC  = func_fit_get_met(beer_m1_add, dir = "backward", crit = "AIC")
+beer_m1_add_bst_BIC  = func_fit_get_met(beer_m1_add, dir = "backward", crit = "BIC")
+
+beer_m2_int2_bst_AIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "AIC")
+beer_m2_int2_bst_BIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "BIC")
+
+beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "AIC")
+beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "BIC")
+
+beer_m4_all_bst_AIC  = func_fit_get_met(beer_m4_all, dir = "backward", crit = "AIC")
+beer_m4_all_bst_BIC  = func_fit_get_met(beer_m4_all, dir = "backward", crit = "BIC")
+```
+
+```{r}
+# create list of models for easy access later
+beer_models_lst = list("beer_m1_add_bst_AIC" = beer_m1_add_bst_AIC$model_bst,
+                       "beer_m1_add_bst_BIC" = beer_m1_add_bst_BIC$model_bst,
+                       "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$model_bst,
+                       "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$model_bst,
+                       "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$model_bst,
+                       "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst,
+                       "beer_m4_all_bst_AIC" = beer_m4_all_bst_AIC$model_bst,
+                       "beer_m4_all_bst_BIC" = beer_m4_all_bst_BIC$model_bst)
+
+# create a dataframe containing rows of metric results for each model for easy access later
+beer_models_metrics = rbind("beer_m1_add_bst_AIC" = beer_m1_add_bst_AIC$metrics_v,
+                            "beer_m1_add_bst_BIC" = beer_m1_add_bst_BIC$metrics_v,
+                            "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$metrics_v,
+                            "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$metrics_v,
+                            "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$metrics_v,
+                            "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v,
+                            "beer_m4_all_bst_AIC" = beer_m4_all_bst_AIC$metrics_v,
+                            "beer_m4_all_bst_BIC" = beer_m4_all_bst_BIC$metrics_v)
+```
+
+Below is the table containing metrics for all the models found from the selection procedures.
+
+```{r echo=FALSE, warning=FALSE}
+kable(beer_models_metrics) %>%
+  kable_styling("striped") %>%
+  row_spec(7, bold = T, color = "black", background = "#c5dfb3")
+```
+
+In this table, the best model is highlighted in green, we'll revisit this again in [results](#results) and [discussions](#discussion) section.
 
 ---
 
-#### Study 1: Using AIC backward Stepwise Search with additive model and two-way interaction across the additive model.
+### 3.6 Model Refinement
 
-In this study 1, we have captured the time it takes to capture the search.
+In this section we'll try to diagnorse the influential observations for the best model that was picked in previous section and see if removing the influential observations makes any improvements in the model.
+
+In below `R` code we are finding the influential observationsusing cooks distance. 
 
 ```{r}
+# compute cooks distance and find the count of records that are highly influential
+influ_cnt = sum(cooks.distance(beer_m4_all_bst_AIC$model_bst) > 4 / length(cooks.distance(beer_m4_all_bst_AIC$model_bst)))
+```
 
+We see that there are $`r influ_cnt`$ influential observations. We'll now try to fit a model without without the influential observations and see if the resulting model does any better; we'll comparae the metrics for the model before and after removing the influential observations.
 
-start_model = lm(ABV ~ (. -FG - IBU)^2 , data = train_set)
+```{r, warning=FALSE}
+# fit starter model without the influential observations
+beer_m4_all_imprv  = lm(ABV ~ (.) + (.)^2 + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) 
+                        + I(BoilTime^2) + I(BoilGravity^2) + I(Efficiency^2), 
+                        data = beer_data_trn,
+                        subset = cooks.distance(beer_m4_all_bst_AIC$model_bst) > 4 /
+                                  length(cooks.distance(beer_m4_all_bst_AIC$model_bst)))
 
-system.time((
-model1_srch = step( start_model, direction = "backward", trace=0) 
-))
+# do backward AIC search and find best model
+beer_m4_all_bst_AIC_impv  = func_fit_get_met(beer_m4_all_imprv, dir = "backward", crit = "AIC")
+
+# store the before and after metrics in a dataframe
+metrics_bfr_afr = rbind("before" = beer_models_metrics[7,],
+                        "after"  = beer_m4_all_bst_AIC_impv$metrics_v)
 
 ```
 
-Note: running the search takes approximately between 27 seconds to 2 minutes.
+Below table indicates the metrics of the model before and after removing the influential observations. We can see that removing the influential observations didn't do any better, so we'll stick to the best model found with the influential observations. We'll revisit this again in [results](#results) and [discussions](#discussion) section. Also interested readers go check [Appendix - A](#appendix---a) for assumptions diagnostics for the best model.
 
-**Plotting and Validating outliers:**
-
-```{r}
-# Plot residual-fitted, and return dataset without outliers.
-data_no_outliers =  residual_fitted_plot(model1_srch, train_set, TRUE, -9) 
+```{r, echo=FALSE}
+kable(metrics_bfr_afr) %>%
+  kable_styling("striped") %>%
+  row_spec(1, bold = T, color = "black", background = "#c5dfb3")
+```
+```{r echo=FALSE}
+beer_model_best = beer_m4_all_bst_AIC$model_bst
+#length(coef(beer_model_best))
 ```
 
-Note that there are 5 observed outliers out of 63.7k observations. By removing the outliers, the residual range narrowed from (-19,6) to (-6,6). See the new plot in Appendix section.
-
-Refit a model againt dataset with no outliers, using the model derived from the aic backward stepwise search.
+Below is the summary of the best model, it has $`r length(coef(beer_model_best))`$ $\beta$ parameters!
 
 ```{r}
-model1  =  lm(formula = ABV ~ OG + Color + Efficiency + BoilGravity + BoilTime + 
-    SugarScale + BrewMethod + OG:Efficiency + OG:BoilTime + OG:SugarScale + 
-    OG:BrewMethod + Color:Efficiency + Color:BoilGravity + Color:BoilTime + 
-    Color:SugarScale + Color:BrewMethod + Efficiency:BoilTime + 
-    Efficiency:SugarScale + Efficiency:BrewMethod + BoilGravity:BoilTime + 
-    BoilGravity:BrewMethod + BoilTime:SugarScale + BoilTime:BrewMethod + 
-    SugarScale:BrewMethod, 
-    data = data_no_outliers)
-
-model1_result = result_metrics(model1, alpha=0.10)
-model1_call = model1$call
-model1_result
+beer_model_best = beer_m4_all_bst_AIC$model_bst
+summary(beer_model_best)
 ```
 
 ---
-
-#### Study 2: Using AIC backward Stepwise Search with additive model and two-way interaction for only the categorical predictors.
-
-```{r}
-
-start_model = lm(ABV ~ (. - FG - IBU ) + 
-        (OG + Color + Efficiency + BoilGravity + BoilTime ) * (SugarScale + BrewMethod),
-         data = train_set)
-
-system.time((
-model2_srch = step( start_model, direction = "backward", trace=0) 
-))
-
-```
-
-Note: running the search takes approximately between 2.829 seconds to 5 seconds.
-
-**Plotting and Validating outliers:**
-
-```{r}
-# Plot residual-fitted, and return dataset without outliers.
-data_no_outliers =  residual_fitted_plot(model2_srch, train_set, TRUE, -9) 
-```
-
-Note that there are 5 observed outliers out of 63.7k observations. By removing the outliers, the residual range narrowed from (-19,6) to (-6,6). See the new plot in Appendix section.
-
-Refit a model againt dataset with no outliers, using the model derived from the aic backward stepwise search.
-
-```{r}
-model2 =   lm(formula = ABV ~ OG + Color + Efficiency + BoilGravity + BoilTime + 
-    SugarScale + BrewMethod + OG:SugarScale + OG:BrewMethod + 
-    Color:SugarScale + Efficiency:BrewMethod + BoilGravity:SugarScale + 
-    BoilGravity:BrewMethod + BoilTime:SugarScale + BoilTime:BrewMethod, 
-    data = data_no_outliers)
-
-model2_result = result_metrics(model2, alpha=0.10)
-model2_call = model2$call
-model2_result
-```
-
-
----
-
-#### Study 3: Using Exhaustive Search and Parameterization.
-
-```{r}
-
-system.time( (
-start_model = summary(regsubsets(ABV ~ (. -FG - IBU )^2 , data = train_set, really.big=TRUE))
-)
-)
-
-# Derive coefficients/variables based on the highest Adjusted R-squared.
-best_r2_ind = which.max(start_model$adjr2)
-coef = names( which(start_model$which[best_r2_ind, ]) )
-cat("Chosen variables by Exhaustive Search:\n")
-coef
-# Parameterization
-# Using the coefficients/variables derived from the exhaustive search, create a new dataframe using
-# three new dummy variables for both train_set and test_set
-
-new_train_set = data.frame(
-ABV = train_set$ABV,
-OG = train_set$OG,
-Color = train_set$Color,
-BoilGravity = train_set$BoilGravity,
-BoilTime = train_set$BoilTime,
-v1 = 1 * as.numeric(train_set$SugarScale == "Specific Gravity"),
-v2 = 1 * as.numeric(train_set$BrewMethod == "BIAB"),
-v3 = 1 * as.numeric(train_set$BrewMethod == "extract")
-)
-
-new_test_set = data.frame(
-ABV = test_set$ABV,
-OG = test_set$OG,
-Color = test_set$Color,
-BoilGravity = test_set$BoilGravity,
-BoilTime = test_set$BoilTime,
-v1 = 1 * as.numeric(test_set$SugarScale == "Specific Gravity"),
-v2 = 1 * as.numeric(test_set$BrewMethod == "BIAB"),
-v3 = 1 * as.numeric(test_set$BrewMethod == "extract")
-)
-
-
-# Now try to fit a model
-model_exhaust = lm( ABV ~ OG + Color + v1 + v2 + v3 + OG:v1 + Color:BoilTime +  BoilTime:v3,
-              data = new_train_set)
-
-
-```
-
-Note: running the search takes approximately between 0.957 seconds to 5 seconds.
-
-**Plotting and Validating outliers:**
-
-```{r}
-# Plot residual-fitted, and return dataset without outliers.
-data_no_outliers =  residual_fitted_plot(model_exhaust, new_train_set, TRUE, -9) 
-```
-
-Note that there are 5 observed outliers out of 63.7k observations. By removing the outliers, the residual range narrowed from (-19,6) to (-6,6). See the new plot in Appendix section.
-
-Refit a model againt dataset with no outliers, using the model derived from the exhaustive search.
-
-```{r}
-
-model3 = lm( ABV ~ OG + Color + v1 + v2 + v3 + OG:v1 + Color:BoilTime +  BoilTime:v3,
-              data = data_no_outliers)
-
-model3_result = result_metrics(model3, alpha=0.10)
-model3_call = model3$call
-model3_result
-```
-
-
-
----
-
-### 3.6 Model(s) Refinement
-
-*Notes: See if any refinements are possible, example check if removing outliers improves the models performance on test dataset]*
 
 ---
 
 ## 4. Results
 
-*[In this section we'll provide metrics table and any visualizations on the metrics]*
+Below is the table containing metrics for all the models found from the initial selection procedures.
 
+<center>**Table-1**</center>
 
-*Summary:* Model 3 is chosen to be the best.  Explained below ...
-
-This study has collected numerical results for R2, adjusted R2, RMSE, number of significant coefficients for comparison. Below is a table listing the results of the three studies:
-
-```{r}
-results = NULL
-results = rbind(results, model1_result)
-results = rbind(results, model2_result)
-results = rbind(results, model3_result)
-results = as.matrix( results )
-results1 = results[, -c(6)]
-dframe_results = data.frame(results1)
-rownames(dframe_results) = c("Study 1", "Study 2", "Study 3")
-knitr::kable(dframe_results, type="markdown")
+```{r echo=FALSE, warning=FALSE}
+kable(beer_models_metrics) %>%
+  kable_styling("striped") %>%
+  row_spec(7, bold = T, color = "black", background = "#c5dfb3")
 ```
 
-We have shown in our study three good models with R-squared at (`r model3_result$r2`) and 
-adjusted-R2 (`r model3_result$adjusted_r2`) and an RMSE (`r model1_result$rmse`). The only difference is the number of variables/coefficients ( showing both significant and non-significant p-values ).
-From the  perspective of significance of regression,  it does show that model 3 has the more simple and less variables than the other two models. However, model 1 seems to have a more dominant significant p-values - this may be true based on the idea that the more predictors/variables we have, the more degrees of freedom, and thus, the higher towards fitting a better model.
+<br>
 
-To prove the point, what does ANOVA tell us in the F-test?
+Below table contains metrics captured before and after removing the influential observations for the best one picked from above table.
 
-First, we compared model1 and model2.  Model2 being the Null Hypothesis.
+<center>**Table-2**</center>
 
-```{r}
-anova( model1_srch, model2_srch)
+```{r, echo=FALSE}
+kable(metrics_bfr_afr) %>%
+  kable_styling("striped") %>%
+  row_spec(1, bold = T, color = "black", background = "#c5dfb3")
 ```
 
-*Note that model1_srch is model 1 in anova,  and model2_srch is model 2 in anova.  Model 2 is the Null Hypothesis*
+<br>
 
-The result of the F-TEST does show that model 1 (Full Hypothesis) is the choice of model since the F-test rejects the null hypothesis. 
+Below is the Actual Vs Predicted scatter plot for the best model fit with and wihout influential observations,
 
-Using model 1, we compare that againt model 3 next.
+<center>**Fig-1**</center>
 
 ```{r}
-anova(model1_srch, model_exhaust)
+model_bfr = beer_m4_all_bst_AIC$model_bst
+model_afr = beer_m4_all_bst_AIC_impv$model_bst
+
+# use the above two models and plot Actual Vs Predicted side by side for them.
+# TBD TBD TBD
+# set echo to false later
 ```
-
-*Note that model1_srch is model 1 in anova,  and model_exhaust is model 2 in anova.  Model 2 is the Null Hypothesis*
-
-The result of the F-TEST does show that model 1 (Full Hypothesis) is the choice of model since the F-test rejects the null hypothesis. However, if one has to compare all the numeric values, apart from model 1 being slow in aic backward keywise search, there is really not much significant difference in terms of R2, adjusted R3, and RMSE. In fact, in can be argued that model 1 may have been chosen due to the fact that model 1 has more significant coefficients (`r model1_result$coef_count - model1_result$not_sig_coef_count`) than model 2 (`r model2_result$coef_count - model2_result$not_sig_coef_count`) or 3 (`r model3_result$coef_count - model3_result$not_sig_coef_count`)
-
-So why model 3 seems to be more preferred when R2, adjusted R3, rmse are all the same among model1,2,3 - and model 1 is chosen by ANOVA? This comes down to the goal of this study which is about COST. Without compromising accuracy/measurements, if we can make beer using the least gadgets and sensors (or categorical choices even), that would be ideal. Basically, why complicate if we can get the same results with less cost. (Ref 17.3 of text).
 
 ---
-
-### 4.1 Statistical Summary
-
-Provide statistical summaries here and detail them.
-
----
-
-### 4.2 Graphical Summary
-
-Provide Graphical summaries here and detail them.
 
 ---
 
@@ -613,84 +530,24 @@ Provide Graphical summaries here and detail them.
 
 ### 5.1 Reflection on Results
 
-*[Notes: Discuss the results here suggest future enhancements]*
-
-We used new_test_set to predict ABV using model3 ( choice of model) using alpha = 0.01.
-
-```{r}
-
-predicted_interval = predict(model3, new_test_set, interval="prediction", level=0.01)
-actual_abv = new_test_set$ABV
-predicted_abv = predicted_interval[,"fit"]
-
-abv = seq(0,15, 1)
-par(mfrow=c(2,2))
-hist(predicted_abv, breaks=100, xlim=range(0,15), xlab="Predicted Value from Model 3", 
-     main="ABV Distribution (Predicted)")
-hist(actual_abv,  breaks=100, xlim=range(0,15), xlab="Actual value from Test Set", 
-     main="ABV Distribution (Actual")
-```
-
-Histogram shows similarity between predicted value and actual value. Occasional drinkers most likely prefer ABV between 4-6 which is exactly where the highest frequency falls;  and the frequency pattern of the predicted values fall in the same range.
-
-Additionally, sampling the first 20 ABVs of both actual and predict are very close. 
-
-```{r}
-head(actual_abv, 20)
-round(as.vector(head(predicted_abv, 20)),2)
-```
-
-Looking at predicted values vs actual values
-
-```{r}
-plot(predicted_abv, actual_abv, col="dodgerblue", ylab="Actual", 
-      xlab="Predicted", main="Actual vs Predicted for Test Data")
-abline(0,1, col="darkorange", lwd=2)
-```
-
-
-Checking RMSE:
-
-```{r}
-(rmse = sqrt(mean((predicted_abv - actual_abv)^2)))
-```
-
-Basically, if we are to assume for a moment that the test data all come from our attempts to brew beer, it would seem that by following the measuring gadgets ( or sensors ) based on the preferred model 3, it can be observed that a standard error of  `r rmse` seems enough to predict the expected alcohol content without other extraneous sensors - and to rely for more additional sensors does not give additional benefit or effect (see R-squared/RMSE) (though statistically, those extraneous sensors may be significant by ANOVA). It should be noted that based on the Exhaustive search (model 3), for ABV (alcohol by volume), by way of parameterization (sort of brute force), it suggest to have a good mix of either "extract" or "BIAB" for BrewMethod along with "Specific Gravity" for SugarScale. The interaction between Color and BoilTime, Boltime and Brewmethod of 'extract'. (This could very well be done also by subsetting dataset to those observations only)
-
-In other words, it is fair to say - referring to some of the extraneous variables - that we don't have to measure the interaction between Color and BoilGravity, or between Color and Efficiency as determined by model 1 because those interactions do not prove to have additional effect in model 3. (Ref 17.3 of text)
-
-**Other analysis in the context of drinking beers:**
-
-Assume, that we are master at brewing beer at home, and all we want is really to serve up occasional (non-strong) drinkers. We know that those beer drinkers may prefer ABV in the range of 4-6; in other words, the predicted-vs-actual plot show some unusual observations above the 20 or even 30 range. Shall we eliminate them? Let's see.
-
-```{r}
-range(actual_abv)
-range(predicted_abv)
-```
-
-Oh no! We got very strong beer mix out there!  If we are to serve up beer between 4-6 ABVs, what would that proportion be in the true distribution?
-
-```{r}
-mean(actual_abv <= 6 & actual_abv >=4 ) 
-```
-
-Would that be the same in the emperical distribution?
-
-```{r}
-mean(predicted_abv <= 6 & predicted_abv >=4 ) 
-```
-
-Close enough! Not bad!
-
+- TBD TBD TBD
+- discuss table 1 resutls
+- discuss over-fitting  and under fitting
+- discuss table 2 results
+- discuss before and after metrics and discuss influential observations
+- discss Fig-1 scatter plots 
 
 
 ---
 
 ### 5.2 Conclusion
 
-A final concluding statement
+TBD TBD -  A final concluding statement   -    TBD TBD 
 
 ---
+
+---
+
 
 ## 6. Appendix
 
@@ -698,29 +555,7 @@ A final concluding statement
 
 ### 6.1 Appendix - A
 
-Some graphs to point out.
-
-This is the result of the dataset after outliers are removed (whether model1, model2, model3).
-
-Residual vs Fitted Plot:
-
-```{r}
-data_no_outliers =  residual_fitted_plot(model3, new_train_set, FALSE) 
-```
-
-Notice that residual range dropped from (-19, 6) to (-6, to 6)
-
-Normal Q-Q Plot:
-
-```{r}
-# Let's draw Normal Q-Q plot for the original model3
-qqnorm(resid(model3), col = "darkgrey")
-qqline(resid(model3), col = "dodgerblue", lwd = 2)
-```
-
-Still within the range of the residual range. The residuals are normally distributed (symmetric), but we are not going to put penalty on the outliers ( tails moving away from the blue line).
-
----
+TBD TBD -   Include details on assumptions diagnostics  -    TBD TBD 
 
 ---
 
@@ -730,7 +565,7 @@ Still within the range of the residual range. The residuals are normally distrib
 
 Let's see (still using model 3):
 
-```{r}
+```{r eval=FALSE}
 
 test_for_occasions = new_test_set[ which ( new_test_set$ABV <= 6 & new_test_set$ABV >=4 ),]
 
@@ -742,7 +577,7 @@ actual_occasions = test_for_occasions$ABV
 
 ```
 
-That's so much better. We should be able to brew beer, predicting an expected alcohool content with an error of only `r rmse` if we focus our beer making around the 4-6 ABV.
+That's so much better. We should be able to brew beer, predicting an expected alcohool content with an error of only  if we focus our beer making around the 4-6 ABV.
 
 ---
 
@@ -752,7 +587,7 @@ That's so much better. We should be able to brew beer, predicting an expected al
 
 Here, we're assuming they're looking for stronger beer above 6 ABV perhaps. Let's see:
 
-```{r}
+```{r eval=FALSE}
 
 test_for_hard = new_test_set[ which ( new_test_set$ABV > 6 ),]
 
@@ -764,6 +599,8 @@ actual_hard = test_for_hard$ABV
 
 ```
 
-Probably not. We will have an error rate of `r rmse` - those beer drinkers will not be happy.
+Probably not. We will have an error rate of  - those beer drinkers will not be happy.
+
+---
 
 ---
