@@ -11,7 +11,7 @@
 
 <meta name="author" content="STAT 420, Summer 2018 - Final Project" />
 
-<meta name="date" content="2018-08-01" />
+<meta name="date" content="2018-08-02" />
 
 <title>Statistical study of Alcohol By Volume (ABV) in Craft Beer</title>
 
@@ -93,9 +93,6 @@ img {
 .tabbed-pane {
   padding-top: 12px;
 }
-.html-widget {
-  margin-bottom: 20px;
-}
 button.code-folding-btn:focus {
   outline: none;
 }
@@ -125,7 +122,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore"><font size="6" color="#002060"><strong>Statistical study of Alcohol By Volume (ABV) in Craft Beer</strong></font></h1>
 <h4 class="author"><em>STAT 420, Summer 2018 - Final Project</em></h4>
-<h4 class="date"><em>01 August 2018</em></h4>
+<h4 class="date"><em>02 August 2018</em></h4>
 
 </div>
 
@@ -139,6 +136,7 @@ $(document).ready(function () {
 <li><a href="#exploratory-visualization">3.3 Exploratory Visualization</a></li>
 <li><a href="#methodology-metrics">3.4 Methodology &amp; Metrics</a></li>
 <li><a href="#implementation">3.5 Implementation</a></li>
+<li><a href="#implementation-1">3.5 Implementation</a></li>
 <li><a href="#model-refinement">3.6 Model Refinement</a></li>
 </ul></li>
 <li><a href="#results">4. Results</a></li>
@@ -1109,7 +1107,6 @@ PartialMash
 <li>Use an additive model using all attributes as starting model and do backward search using AIC and BIC</li>
 <li>Use a model with all two-way interactions along with their main effects as starting model and do backward search using AIC and BIC</li>
 <li>Use a model with two-degree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC</li>
-<li>Use a model with all two-way interactions and two-dgree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC.</li>
 </ul></li>
 <li>For each model capture the metrics defined in next sub-section on train and test data.</li>
 <li>We’ll then pick the best model based on metrics and further tune or diagnose it for leverages, outliers and influencial observations.</li>
@@ -1122,13 +1119,20 @@ PartialMash
 <li>LOOCV.RMSE</li>
 <li>R-squared</li>
 <li>Adj-R-squared</li>
-<li>Error percentage on train data</li>
-<li>Error percentage on test data</li>
+<li>Average percent error on train data</li>
+<li>Average percent error on test data</li>
 <li>Time taken to search the best model (in minutes)</li>
 </ul>
 <hr />
 </div>
 <div id="implementation" class="section level3">
+<h3>3.5 Implementation</h3>
+<p>This section includes the detailed <code>R</code> code implementation following the approach described in previous section.</p>
+<p><br></p>
+<p><strong>Train and Test Split: </strong></p>
+<hr />
+</div>
+<div id="implementation-1" class="section level3">
 <h3>3.5 Implementation</h3>
 <p>This section includes the detailed <code>R</code> code implementation following the approach described in previous section.</p>
 <p><br></p>
@@ -1195,7 +1199,7 @@ func_fit_get_met = function(strt_model,
 }</code></pre>
 <p><br></p>
 <p><strong>Fit different starting models and search best one for each using backward AIC and BIC: </strong></p>
-<p>With the generic fucntion defined, now we’ll fit 4 starter models defined in the section <a href="#methodology-metrics">Methodology</a> section and search two best models using the function, one with backward AIC search and another with backward BIC search. Along they way we’ll also catpure the metrics returned by the function in a dataframe for present it in <a href="#results">results</a> section. This will result in 8 models and metrics for each of them.</p>
+<p>With the generic fucntion defined, now we’ll fit 3 starter models defined in the section <a href="#methodology-metrics">Methodology</a> section and search two best models using the function, one with backward AIC search and another with backward BIC search. Along they way we’ll also catpure the metrics returned by the function in a dataframe for present it in <a href="#results">results</a> section. This will result in 6 models and metrics for each of them.</p>
 <pre class="r"><code>### Define starter models ### 
 
 # additive starter model
@@ -1206,10 +1210,6 @@ beer_m2_int2 = lm(ABV ~ (.)^2, data = beer_data_trn)
 
 # two-degree polynomial starter model
 beer_m3_ply2 = lm(ABV ~ (.) + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + I(BoilTime^2) +
-                    I(BoilGravity^2) + I(Efficiency^2), data = beer_data_trn)
-
-# starter model which encompasses all the effects of above model
-beer_m4_all  = lm(ABV ~ (.) + (.)^2 + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + I(BoilTime^2) +
                     I(BoilGravity^2) + I(Efficiency^2), data = beer_data_trn)</code></pre>
 <pre class="r"><code>### Search best models for each using backward AIC and BIC and store the models in a list ###
 beer_m1_add_bst_AIC  = func_fit_get_met(beer_m1_add, dir = &quot;backward&quot;, crit = &quot;AIC&quot;)
@@ -1219,29 +1219,22 @@ beer_m2_int2_bst_AIC = func_fit_get_met(beer_m2_int2, dir = &quot;backward&quot;
 beer_m2_int2_bst_BIC = func_fit_get_met(beer_m2_int2, dir = &quot;backward&quot;, crit = &quot;BIC&quot;)
 
 beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = &quot;backward&quot;, crit = &quot;AIC&quot;)
-beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = &quot;backward&quot;, crit = &quot;BIC&quot;)
-
-beer_m4_all_bst_AIC  = func_fit_get_met(beer_m4_all, dir = &quot;backward&quot;, crit = &quot;AIC&quot;)
-beer_m4_all_bst_BIC  = func_fit_get_met(beer_m4_all, dir = &quot;backward&quot;, crit = &quot;BIC&quot;)</code></pre>
+beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = &quot;backward&quot;, crit = &quot;BIC&quot;)</code></pre>
 <pre class="r"><code># create list of models for easy access later
-beer_models_lst = list(&quot;beer_m1_add_bst_AIC&quot; = beer_m1_add_bst_AIC$model_bst,
-                       &quot;beer_m1_add_bst_BIC&quot; = beer_m1_add_bst_BIC$model_bst,
+beer_models_lst = list(&quot;beer_m1_add_bst_AIC&quot;  = beer_m1_add_bst_AIC$model_bst,
+                       &quot;beer_m1_add_bst_BIC&quot;  = beer_m1_add_bst_BIC$model_bst,
                        &quot;beer_m2_int2_bst_AIC&quot; = beer_m2_int2_bst_AIC$model_bst,
                        &quot;beer_m2_int2_bst_BIC&quot; = beer_m2_int2_bst_BIC$model_bst,
                        &quot;beer_m3_ply2_bst_AIC&quot; = beer_m3_ply2_bst_AIC$model_bst,
-                       &quot;beer_m3_ply2_bst_BIC&quot; = beer_m3_ply2_bst_BIC$model_bst,
-                       &quot;beer_m4_all_bst_AIC&quot; = beer_m4_all_bst_AIC$model_bst,
-                       &quot;beer_m4_all_bst_BIC&quot; = beer_m4_all_bst_BIC$model_bst)
+                       &quot;beer_m3_ply2_bst_BIC&quot; = beer_m3_ply2_bst_BIC$model_bst)
 
 # create a dataframe containing rows of metric results for each model for easy access later
-beer_models_metrics = rbind(&quot;beer_m1_add_bst_AIC&quot; = beer_m1_add_bst_AIC$metrics_v,
-                            &quot;beer_m1_add_bst_BIC&quot; = beer_m1_add_bst_BIC$metrics_v,
+beer_models_metrics = rbind(&quot;beer_m1_add_bst_AIC&quot;  = beer_m1_add_bst_AIC$metrics_v,
+                            &quot;beer_m1_add_bst_BIC&quot;  = beer_m1_add_bst_BIC$metrics_v,
                             &quot;beer_m2_int2_bst_AIC&quot; = beer_m2_int2_bst_AIC$metrics_v,
                             &quot;beer_m2_int2_bst_BIC&quot; = beer_m2_int2_bst_BIC$metrics_v,
                             &quot;beer_m3_ply2_bst_AIC&quot; = beer_m3_ply2_bst_AIC$metrics_v,
-                            &quot;beer_m3_ply2_bst_BIC&quot; = beer_m3_ply2_bst_BIC$metrics_v,
-                            &quot;beer_m4_all_bst_AIC&quot; = beer_m4_all_bst_AIC$metrics_v,
-                            &quot;beer_m4_all_bst_BIC&quot; = beer_m4_all_bst_BIC$metrics_v)</code></pre>
+                            &quot;beer_m3_ply2_bst_BIC&quot; = beer_m3_ply2_bst_BIC$metrics_v)</code></pre>
 <p>Below is the table containing metrics for all the models found from the selection procedures.</p>
 <table class="table table-striped" style="margin-left: auto; margin-right: auto;">
 <thead>
@@ -1301,7 +1294,7 @@ beer_m1_add_bst_AIC
 15.648
 </td>
 <td style="text-align:right;">
-0.3513
+0.3217
 </td>
 </tr>
 <tr>
@@ -1330,7 +1323,7 @@ beer_m1_add_bst_BIC
 15.648
 </td>
 <td style="text-align:right;">
-0.2188
+0.2565
 </td>
 </tr>
 <tr>
@@ -1359,36 +1352,36 @@ beer_m2_int2_bst_AIC
 4.867
 </td>
 <td style="text-align:right;">
-2.5031
+2.7069
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;font-weight: bold;color: black;background-color: #c5dfb3;">
 beer_m2_int2_bst_BIC
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.1935
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.1894
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.4411
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.9462
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.9462
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 4.965
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 4.938
 </td>
-<td style="text-align:right;">
-3.2126
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
+3.7032
 </td>
 </tr>
 <tr>
@@ -1417,7 +1410,7 @@ beer_m3_ply2_bst_AIC
 13.944
 </td>
 <td style="text-align:right;">
-0.7955
+1.1013
 </td>
 </tr>
 <tr>
@@ -1446,65 +1439,7 @@ beer_m3_ply2_bst_BIC
 13.916
 </td>
 <td style="text-align:right;">
-2.3585
-</td>
-</tr>
-<tr>
-<td style="text-align:left;font-weight: bold;color: black;background-color: #c5dfb3;">
-beer_m4_all_bst_AIC
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1922
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1893
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.4403
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9466
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9465
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.923
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.911
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-3.9566
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-beer_m4_all_bst_BIC
-</td>
-<td style="text-align:right;">
-0.1926
-</td>
-<td style="text-align:right;">
-0.1892
-</td>
-<td style="text-align:right;">
-0.4401
-</td>
-<td style="text-align:right;">
-0.9465
-</td>
-<td style="text-align:right;">
-0.9464
-</td>
-<td style="text-align:right;">
-4.926
-</td>
-<td style="text-align:right;">
-4.923
-</td>
-<td style="text-align:right;">
-5.2912
+2.9015
 </td>
 </tr>
 </tbody>
@@ -1517,21 +1452,20 @@ beer_m4_all_bst_BIC
 <p>In this section we’ll try to diagnorse the influential observations for the best model that was picked in previous section and see if removing the influential observations makes any improvements in the model.</p>
 <p>In below <code>R</code> code we are finding the influential observationsusing cooks distance.</p>
 <pre class="r"><code># compute cooks distance and find the count of records that are highly influential
-influ_cnt = sum(cooks.distance(beer_m4_all_bst_AIC$model_bst) &gt; 4 / length(cooks.distance(beer_m4_all_bst_AIC$model_bst)))</code></pre>
-<p>We see that there are <span class="math inline">\(2014\)</span> influential observations. We’ll now try to fit a model without without the influential observations and see if the resulting model does any better; we’ll comparae the metrics for the model before and after removing the influential observations.</p>
+influ_cnt = sum(cooks.distance(beer_m2_int2_bst_BIC$model_bst) &gt; 4 / length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))</code></pre>
+<p>We see that there are <span class="math inline">\(2101\)</span> influential observations. We’ll now try to fit a model without without the influential observations and see if the resulting model does any better; we’ll comparae the metrics for the model before and after removing the influential observations.</p>
 <pre class="r"><code># fit starter model without the influential observations
-beer_m4_all_imprv  = lm(ABV ~ (.) + (.)^2 + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) 
-                        + I(BoilTime^2) + I(BoilGravity^2) + I(Efficiency^2), 
+beer_m2_int2_imprv  = lm(ABV ~ (.)^2, 
                         data = beer_data_trn,
-                        subset = cooks.distance(beer_m4_all_bst_AIC$model_bst) &gt; 4 /
-                                  length(cooks.distance(beer_m4_all_bst_AIC$model_bst)))
+                        subset = cooks.distance(beer_m2_int2_bst_BIC$model_bst) &gt; 4 /
+                                  length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))
 
 # do backward AIC search and find best model
-beer_m4_all_bst_AIC_impv  = func_fit_get_met(beer_m4_all_imprv, dir = &quot;backward&quot;, crit = &quot;AIC&quot;)
+beer_m2_int2_bst_BIC_impv  = func_fit_get_met(beer_m2_int2_imprv, dir = &quot;backward&quot;, crit = &quot;AIC&quot;)
 
 # store the before and after metrics in a dataframe
-metrics_bfr_afr = rbind(&quot;before&quot; = beer_models_metrics[7,],
-                        &quot;after&quot;  = beer_m4_all_bst_AIC_impv$metrics_v)</code></pre>
+metrics_bfr_afr = rbind(&quot;before&quot; = beer_models_metrics[4,],
+                        &quot;after&quot;  = beer_m2_int2_bst_BIC_impv$metrics_v)</code></pre>
 <p>Below table indicates the metrics of the model before and after removing the influential observations. We can see that removing the influential observations didn’t do any better, so we’ll stick to the best model found with the influential observations. We’ll revisit this again in <a href="#results">results</a> and <a href="#discussion">discussions</a> section. Also interested readers go check <a href="#appendix---a">Appendix - A</a> for assumptions diagnostics for the best model.</p>
 <table class="table table-striped" style="margin-left: auto; margin-right: auto;">
 <thead>
@@ -1570,28 +1504,28 @@ trn_time
 before
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1922
+0.1935
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1893
+0.1894
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.4403
+0.4411
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9466
+0.9462
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9465
+0.9462
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.923
+4.965
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.911
+4.938
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-3.957
+3.703
 </td>
 </tr>
 <tr>
@@ -1599,201 +1533,129 @@ before
 after
 </td>
 <td style="text-align:right;">
-1.8473
+1.8160
 </td>
 <td style="text-align:right;">
-0.3032
+0.3573
 </td>
 <td style="text-align:right;">
-1.3770
+1.5226
 </td>
 <td style="text-align:right;">
-0.9345
+0.9352
 </td>
 <td style="text-align:right;">
-0.9339
+0.9340
 </td>
 <td style="text-align:right;">
-36.114
+34.561
 </td>
 <td style="text-align:right;">
-6.983
+7.678
 </td>
 <td style="text-align:right;">
-47.450
+12.829
 </td>
 </tr>
 </tbody>
 </table>
-<p>Below is the summary of the best model, it has <span class="math inline">\(68\)</span> <span class="math inline">\(\beta\)</span> parameters!</p>
-<pre class="r"><code>beer_model_best = beer_m4_all_bst_AIC$model_bst
+<p>Below is the summary of the best model, it has <span class="math inline">\(35\)</span> <span class="math inline">\(\beta\)</span> parameters!</p>
+<pre class="r"><code>beer_model_best = beer_m2_int2_bst_BIC$model_bst
 summary(beer_model_best)</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = ABV ~ SugarScale + BrewMethod + Size + OG + IBU + 
 ##     Color + BoilSize + BoilTime + BoilGravity + Efficiency + 
-##     I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + 
-##     I(BoilTime^2) + I(Efficiency^2) + SugarScale:Size + SugarScale:OG + 
-##     SugarScale:IBU + SugarScale:Color + SugarScale:BoilSize + 
-##     SugarScale:BoilTime + SugarScale:BoilGravity + SugarScale:Efficiency + 
-##     BrewMethod:Size + BrewMethod:OG + BrewMethod:IBU + BrewMethod:BoilSize + 
-##     BrewMethod:BoilTime + BrewMethod:BoilGravity + BrewMethod:Efficiency + 
-##     Size:IBU + Size:BoilSize + Size:BoilGravity + Size:Efficiency + 
-##     OG:Color + OG:BoilTime + OG:Efficiency + IBU:Color + IBU:BoilSize + 
-##     IBU:BoilTime + IBU:BoilGravity + Color:BoilSize + Color:BoilGravity + 
-##     Color:Efficiency + BoilSize:BoilGravity + BoilSize:Efficiency + 
-##     BoilTime:BoilGravity + BoilTime:Efficiency + BoilGravity:Efficiency, 
+##     SugarScale:OG + SugarScale:IBU + SugarScale:Color + SugarScale:BoilTime + 
+##     SugarScale:Efficiency + BrewMethod:BoilTime + Size:OG + Size:Efficiency + 
+##     OG:BoilSize + OG:BoilTime + OG:Efficiency + IBU:Color + IBU:BoilTime + 
+##     IBU:BoilGravity + Color:BoilSize + Color:BoilGravity + Color:Efficiency + 
+##     BoilSize:Efficiency + BoilTime:BoilGravity + BoilTime:Efficiency, 
 ##     data = beer_data_trn)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -19.339  -0.227  -0.030   0.241   6.469 
+## -19.500  -0.226  -0.034   0.244   6.410 
 ## 
 ## Coefficients:
-##                                        Estimate Std. Error t value
-## (Intercept)                           -1.03e+00   4.38e-01   -2.35
-## SugarScaleSpecificGravity             -1.01e+02   4.37e-01 -230.32
-## BrewMethodBIAB                         4.27e-02   4.86e-02    0.88
-## BrewMethodextract                      2.21e-01   5.24e-02    4.23
-## BrewMethodPartialMash                 -1.64e-02   6.49e-02   -0.25
-## Size                                  -1.19e-03   1.23e-03   -0.97
-## OG                                     3.77e-01   3.24e-02   11.63
-## IBU                                    2.24e-03   6.28e-04    3.57
-## Color                                  1.16e-02   4.88e-03    2.39
-## BoilSize                               1.26e-03   1.17e-03    1.07
-## BoilTime                              -4.95e-03   3.36e-03   -1.47
-## BoilGravity                            2.85e-03   5.16e-04    5.52
-## Efficiency                             2.10e-02   5.22e-03    4.01
-## I(Size^2)                              8.17e-07   1.80e-07    4.54
-## I(OG^2)                                2.35e-03   6.45e-04    3.65
-## I(IBU^2)                              -3.20e-07   7.64e-08   -4.18
-## I(Color^2)                             1.57e-04   1.32e-05   11.88
-## I(BoilSize^2)                          7.08e-07   1.53e-07    4.61
-## I(BoilTime^2)                          1.16e-05   2.58e-06    4.51
-## I(Efficiency^2)                        7.37e-05   9.11e-06    8.08
-## SugarScaleSpecificGravity:Size        -1.43e-03   5.51e-04   -2.59
-## SugarScaleSpecificGravity:OG           1.01e+02   1.70e-01  594.66
-## SugarScaleSpecificGravity:IBU         -3.45e-03   5.70e-04   -6.05
-## SugarScaleSpecificGravity:Color       -2.33e-02   4.41e-03   -5.28
-## SugarScaleSpecificGravity:BoilSize     1.33e-03   5.32e-04    2.49
-## SugarScaleSpecificGravity:BoilTime     8.48e-03   3.03e-03    2.80
-## SugarScaleSpecificGravity:BoilGravity  9.86e-04   2.52e-04    3.91
-## SugarScaleSpecificGravity:Efficiency  -2.22e-02   4.69e-03   -4.73
-## BrewMethodBIAB:Size                    2.23e-03   4.22e-04    5.27
-## BrewMethodextract:Size                -4.72e-03   1.10e-03   -4.31
-## BrewMethodPartialMash:Size             1.48e-03   1.12e-03    1.32
-## BrewMethodBIAB:OG                      1.80e-02   7.00e-03    2.57
-## BrewMethodextract:OG                   1.60e-02   8.92e-03    1.79
-## BrewMethodPartialMash:OG               3.58e-02   9.21e-03    3.89
-## BrewMethodBIAB:IBU                     5.64e-04   1.34e-04    4.21
-## BrewMethodextract:IBU                 -4.04e-04   1.55e-04   -2.60
-## BrewMethodPartialMash:IBU              5.03e-05   2.54e-04    0.20
-## BrewMethodBIAB:BoilSize               -1.91e-03   3.75e-04   -5.09
-## BrewMethodextract:BoilSize             4.29e-03   1.06e-03    4.05
-## BrewMethodPartialMash:BoilSize        -1.36e-03   1.06e-03   -1.28
-## BrewMethodBIAB:BoilTime                2.67e-04   3.52e-04    0.76
-## BrewMethodextract:BoilTime            -6.24e-03   6.09e-04  -10.24
-## BrewMethodPartialMash:BoilTime        -1.95e-03   8.15e-04   -2.39
-## BrewMethodBIAB:BoilGravity            -6.32e-04   2.25e-04   -2.81
-## BrewMethodextract:BoilGravity         -4.34e-04   2.80e-04   -1.55
-## BrewMethodPartialMash:BoilGravity     -9.16e-04   3.08e-04   -2.98
-## BrewMethodBIAB:Efficiency             -2.49e-04   6.11e-04   -0.41
-## BrewMethodextract:Efficiency           2.94e-03   6.13e-04    4.80
-## BrewMethodPartialMash:Efficiency       1.62e-03   6.48e-04    2.51
-## Size:IBU                              -6.49e-06   3.16e-06   -2.05
-## Size:BoilSize                         -1.53e-06   3.29e-07   -4.66
-## Size:BoilGravity                      -4.58e-06   1.50e-06   -3.05
-## Size:Efficiency                        3.49e-05   1.14e-05    3.05
-## OG:Color                              -3.78e-04   2.64e-04   -1.43
-## OG:BoilTime                            1.18e-03   1.91e-04    6.18
-## OG:Efficiency                         -1.36e-03   3.41e-04   -3.98
-## IBU:Color                              5.59e-05   3.93e-06   14.23
-## IBU:BoilSize                           6.88e-06   2.96e-06    2.33
-## IBU:BoilTime                           1.75e-05   3.11e-06    5.63
-## IBU:BoilGravity                       -3.76e-06   1.02e-06   -3.67
-## Color:BoilSize                         2.93e-06   8.42e-07    3.48
-## Color:BoilGravity                     -5.27e-05   5.71e-06   -9.24
-## Color:Efficiency                      -4.24e-05   1.20e-05   -3.52
-## BoilSize:BoilGravity                   4.25e-06   1.47e-06    2.88
-## BoilSize:Efficiency                   -3.43e-05   1.10e-05   -3.13
-## BoilTime:BoilGravity                  -1.70e-05   3.95e-06   -4.30
-## BoilTime:Efficiency                   -8.72e-05   1.10e-05   -7.94
-## BoilGravity:Efficiency                -1.78e-05   5.61e-06   -3.18
-##                                       Pr(&gt;|t|)    
-## (Intercept)                            0.01866 *  
-## SugarScaleSpecificGravity              &lt; 2e-16 ***
-## BrewMethodBIAB                         0.38026    
-## BrewMethodextract                      2.4e-05 ***
-## BrewMethodPartialMash                  0.80010    
-## Size                                   0.33160    
-## OG                                     &lt; 2e-16 ***
-## IBU                                    0.00036 ***
-## Color                                  0.01703 *  
-## BoilSize                               0.28278    
-## BoilTime                               0.14135    
-## BoilGravity                            3.3e-08 ***
-## Efficiency                             6.0e-05 ***
-## I(Size^2)                              5.7e-06 ***
-## I(OG^2)                                0.00026 ***
-## I(IBU^2)                               2.9e-05 ***
-## I(Color^2)                             &lt; 2e-16 ***
-## I(BoilSize^2)                          4.0e-06 ***
-## I(BoilTime^2)                          6.4e-06 ***
-## I(Efficiency^2)                        6.4e-16 ***
-## SugarScaleSpecificGravity:Size         0.00956 ** 
-## SugarScaleSpecificGravity:OG           &lt; 2e-16 ***
-## SugarScaleSpecificGravity:IBU          1.5e-09 ***
-## SugarScaleSpecificGravity:Color        1.3e-07 ***
-## SugarScaleSpecificGravity:BoilSize     0.01272 *  
-## SugarScaleSpecificGravity:BoilTime     0.00511 ** 
-## SugarScaleSpecificGravity:BoilGravity  9.2e-05 ***
-## SugarScaleSpecificGravity:Efficiency   2.2e-06 ***
-## BrewMethodBIAB:Size                    1.3e-07 ***
-## BrewMethodextract:Size                 1.6e-05 ***
-## BrewMethodPartialMash:Size             0.18611    
-## BrewMethodBIAB:OG                      0.01030 *  
-## BrewMethodextract:OG                   0.07323 .  
-## BrewMethodPartialMash:OG               0.00010 ***
-## BrewMethodBIAB:IBU                     2.5e-05 ***
-## BrewMethodextract:IBU                  0.00930 ** 
-## BrewMethodPartialMash:IBU              0.84332    
-## BrewMethodBIAB:BoilSize                3.7e-07 ***
-## BrewMethodextract:BoilSize             5.2e-05 ***
-## BrewMethodPartialMash:BoilSize         0.20165    
-## BrewMethodBIAB:BoilTime                0.44860    
-## BrewMethodextract:BoilTime             &lt; 2e-16 ***
-## BrewMethodPartialMash:BoilTime         0.01671 *  
-## BrewMethodBIAB:BoilGravity             0.00500 ** 
-## BrewMethodextract:BoilGravity          0.12069    
-## BrewMethodPartialMash:BoilGravity      0.00291 ** 
-## BrewMethodBIAB:Efficiency              0.68413    
-## BrewMethodextract:Efficiency           1.6e-06 ***
-## BrewMethodPartialMash:Efficiency       0.01220 *  
-## Size:IBU                               0.04005 *  
-## Size:BoilSize                          3.2e-06 ***
-## Size:BoilGravity                       0.00231 ** 
-## Size:Efficiency                        0.00228 ** 
-## OG:Color                               0.15261    
-## OG:BoilTime                            6.4e-10 ***
-## OG:Efficiency                          6.8e-05 ***
-## IBU:Color                              &lt; 2e-16 ***
-## IBU:BoilSize                           0.02006 *  
-## IBU:BoilTime                           1.8e-08 ***
-## IBU:BoilGravity                        0.00025 ***
-## Color:BoilSize                         0.00051 ***
-## Color:BoilGravity                      &lt; 2e-16 ***
-## Color:Efficiency                       0.00043 ***
-## BoilSize:BoilGravity                   0.00392 ** 
-## BoilSize:Efficiency                    0.00175 ** 
-## BoilTime:BoilGravity                   1.7e-05 ***
-## BoilTime:Efficiency                    2.1e-15 ***
-## BoilGravity:Efficiency                 0.00148 ** 
+##                                       Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)                          -1.70e+00   3.68e-01   -4.61  4.1e-06
+## SugarScaleSpecificGravity            -1.01e+02   3.78e-01 -266.93  &lt; 2e-16
+## BrewMethodBIAB                        4.45e-02   2.33e-02    1.91  0.05582
+## BrewMethodextract                     4.42e-01   3.47e-02   12.73  &lt; 2e-16
+## BrewMethodPartialMash                 1.25e-01   5.01e-02    2.49  0.01286
+## Size                                 -3.28e-03   6.96e-04   -4.71  2.5e-06
+## OG                                    4.58e-01   2.50e-02   18.34  &lt; 2e-16
+## IBU                                   3.19e-03   5.55e-04    5.74  9.6e-09
+## Color                                 6.89e-03   2.61e-03    2.63  0.00842
+## BoilSize                              3.16e-03   6.63e-04    4.76  1.9e-06
+## BoilTime                             -5.51e-03   3.24e-03   -1.70  0.08924
+## BoilGravity                           2.00e-03   2.38e-04    8.42  &lt; 2e-16
+## Efficiency                            2.61e-02   4.69e-03    5.57  2.5e-08
+## SugarScaleSpecificGravity:OG          1.02e+02   1.38e-01  735.84  &lt; 2e-16
+## SugarScaleSpecificGravity:IBU        -4.79e-03   5.00e-04   -9.59  &lt; 2e-16
+## SugarScaleSpecificGravity:Color      -1.28e-02   2.03e-03   -6.29  3.2e-10
+## SugarScaleSpecificGravity:BoilTime    1.02e-02   2.92e-03    3.50  0.00047
+## SugarScaleSpecificGravity:Efficiency -1.88e-02   4.33e-03   -4.34  1.4e-05
+## BrewMethodBIAB:BoilTime               9.34e-05   3.51e-04    0.27  0.79004
+## BrewMethodextract:BoilTime           -7.60e-03   5.63e-04  -13.48  &lt; 2e-16
+## BrewMethodPartialMash:BoilTime       -2.50e-03   8.00e-04   -3.13  0.00176
+## Size:OG                              -5.78e-05   1.38e-05   -4.18  2.9e-05
+## Size:Efficiency                       4.12e-05   9.24e-06    4.46  8.1e-06
+## OG:BoilSize                           5.40e-05   1.29e-05    4.19  2.7e-05
+## OG:BoilTime                           1.27e-03   1.86e-04    6.82  9.5e-12
+## OG:Efficiency                        -1.52e-03   3.26e-04   -4.65  3.3e-06
+## IBU:Color                             6.35e-05   3.84e-06   16.53  &lt; 2e-16
+## IBU:BoilTime                          2.53e-05   2.95e-06    8.60  &lt; 2e-16
+## IBU:BoilGravity                      -8.24e-06   6.19e-07  -13.30  &lt; 2e-16
+## Color:BoilSize                        2.94e-06   8.01e-07    3.67  0.00024
+## Color:BoilGravity                    -3.71e-05   5.53e-06   -6.71  2.0e-11
+## Color:Efficiency                     -4.92e-05   1.19e-05   -4.13  3.7e-05
+## BoilSize:Efficiency                  -3.96e-05   8.81e-06   -4.50  6.8e-06
+## BoilTime:BoilGravity                 -1.74e-05   3.70e-06   -4.70  2.6e-06
+## BoilTime:Efficiency                  -8.28e-05   1.05e-05   -7.90  2.8e-15
+##                                         
+## (Intercept)                          ***
+## SugarScaleSpecificGravity            ***
+## BrewMethodBIAB                       .  
+## BrewMethodextract                    ***
+## BrewMethodPartialMash                *  
+## Size                                 ***
+## OG                                   ***
+## IBU                                  ***
+## Color                                ** 
+## BoilSize                             ***
+## BoilTime                             .  
+## BoilGravity                          ***
+## Efficiency                           ***
+## SugarScaleSpecificGravity:OG         ***
+## SugarScaleSpecificGravity:IBU        ***
+## SugarScaleSpecificGravity:Color      ***
+## SugarScaleSpecificGravity:BoilTime   ***
+## SugarScaleSpecificGravity:Efficiency ***
+## BrewMethodBIAB:BoilTime                 
+## BrewMethodextract:BoilTime           ***
+## BrewMethodPartialMash:BoilTime       ** 
+## Size:OG                              ***
+## Size:Efficiency                      ***
+## OG:BoilSize                          ***
+## OG:BoilTime                          ***
+## OG:Efficiency                        ***
+## IBU:Color                            ***
+## IBU:BoilTime                         ***
+## IBU:BoilGravity                      ***
+## Color:BoilSize                       ***
+## Color:BoilGravity                    ***
+## Color:Efficiency                     ***
+## BoilSize:Efficiency                  ***
+## BoilTime:BoilGravity                 ***
+## BoilTime:Efficiency                  ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.439 on 56628 degrees of freedom
-## Multiple R-squared:  0.947,  Adjusted R-squared:  0.947 
-## F-statistic: 1.5e+04 on 67 and 56628 DF,  p-value: &lt;2e-16</code></pre>
+## Residual standard error: 0.44 on 56661 degrees of freedom
+## Multiple R-squared:  0.946,  Adjusted R-squared:  0.946 
+## F-statistic: 2.93e+04 on 34 and 56661 DF,  p-value: &lt;2e-16</code></pre>
 <hr />
 <hr />
 </div>
@@ -1862,7 +1724,7 @@ beer_m1_add_bst_AIC
 15.648
 </td>
 <td style="text-align:right;">
-0.3513
+0.3217
 </td>
 </tr>
 <tr>
@@ -1891,7 +1753,7 @@ beer_m1_add_bst_BIC
 15.648
 </td>
 <td style="text-align:right;">
-0.2188
+0.2565
 </td>
 </tr>
 <tr>
@@ -1920,36 +1782,36 @@ beer_m2_int2_bst_AIC
 4.867
 </td>
 <td style="text-align:right;">
-2.5031
+2.7069
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;font-weight: bold;color: black;background-color: #c5dfb3;">
 beer_m2_int2_bst_BIC
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.1935
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.1894
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.4411
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.9462
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 0.9462
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 4.965
 </td>
-<td style="text-align:right;">
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
 4.938
 </td>
-<td style="text-align:right;">
-3.2126
+<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
+3.7032
 </td>
 </tr>
 <tr>
@@ -1978,7 +1840,7 @@ beer_m3_ply2_bst_AIC
 13.944
 </td>
 <td style="text-align:right;">
-0.7955
+1.1013
 </td>
 </tr>
 <tr>
@@ -2007,65 +1869,7 @@ beer_m3_ply2_bst_BIC
 13.916
 </td>
 <td style="text-align:right;">
-2.3585
-</td>
-</tr>
-<tr>
-<td style="text-align:left;font-weight: bold;color: black;background-color: #c5dfb3;">
-beer_m4_all_bst_AIC
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1922
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1893
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.4403
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9466
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9465
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.923
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.911
-</td>
-<td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-3.9566
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-beer_m4_all_bst_BIC
-</td>
-<td style="text-align:right;">
-0.1926
-</td>
-<td style="text-align:right;">
-0.1892
-</td>
-<td style="text-align:right;">
-0.4401
-</td>
-<td style="text-align:right;">
-0.9465
-</td>
-<td style="text-align:right;">
-0.9464
-</td>
-<td style="text-align:right;">
-4.926
-</td>
-<td style="text-align:right;">
-4.923
-</td>
-<td style="text-align:right;">
-5.2912
+2.9015
 </td>
 </tr>
 </tbody>
@@ -2112,28 +1916,28 @@ trn_time
 before
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1922
+0.1935
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.1893
+0.1894
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.4403
+0.4411
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9466
+0.9462
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-0.9465
+0.9462
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.923
+4.965
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-4.911
+4.938
 </td>
 <td style="text-align:right;font-weight: bold;color: black;background-color: #c5dfb3;">
-3.957
+3.703
 </td>
 </tr>
 <tr>
@@ -2141,28 +1945,28 @@ before
 after
 </td>
 <td style="text-align:right;">
-1.8473
+1.8160
 </td>
 <td style="text-align:right;">
-0.3032
+0.3573
 </td>
 <td style="text-align:right;">
-1.3770
+1.5226
 </td>
 <td style="text-align:right;">
-0.9345
+0.9352
 </td>
 <td style="text-align:right;">
-0.9339
+0.9340
 </td>
 <td style="text-align:right;">
-36.114
+34.561
 </td>
 <td style="text-align:right;">
-6.983
+7.678
 </td>
 <td style="text-align:right;">
-47.450
+12.829
 </td>
 </tr>
 </tbody>
@@ -2172,8 +1976,8 @@ after
 <center>
 <strong>Fig-1</strong>
 </center>
-<pre class="r"><code>model_bfr = beer_m4_all_bst_AIC$model_bst
-model_afr = beer_m4_all_bst_AIC_impv$model_bst
+<pre class="r"><code>model_bfr = beer_m2_int2_bst_BIC$model_bst
+model_afr = beer_m2_int2_bst_BIC_impv$model_bst
 
 # use the above two models and plot Actual Vs Predicted side by side for them.
 # TBD TBD TBD

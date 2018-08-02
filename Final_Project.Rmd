@@ -259,7 +259,6 @@ Described in this section are the high level steps that shall be taken to fit mo
     + Use an additive model using all attributes as starting model and do backward search using AIC and BIC
     + Use a model with all two-way interactions along with their main effects as starting model and do backward search using AIC and BIC
     + Use a model with two-degree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC
-    + Use a model with all two-way interactions and two-dgree polynomials for all attributes along with their main effects as starting model and do backward search using AIC and BIC.
 - For each model capture the metrics defined in next sub-section on train and test data.
 - We'll then pick the best model based on metrics and further tune or diagnose it for leverages, outliers and influencial observations.
 
@@ -272,9 +271,20 @@ Below are the metrics that shall be captured for each of the models that we fit.
 - LOOCV.RMSE
 - R-squared
 - Adj-R-squared
-- Error percentage on train data
-- Error percentage on test data
+- Average percent error on train data
+- Average percent error on test data
 - Time taken to search the best model (in minutes)
+
+---
+
+### 3.5 Implementation
+
+This section includes the detailed `R` code implementation following the approach described in previous section.
+
+<br>
+
+**Train and Test Split: **
+
 
 ---
 
@@ -359,7 +369,7 @@ func_fit_get_met = function(strt_model,
 
 **Fit different starting models and search best one for each using backward AIC and BIC: **
 
-With the generic fucntion defined, now we'll fit 4 starter models defined in the section [Methodology](#methodology-metrics) section and search two best models using the function, one with backward AIC search and another with backward BIC search. Along they way we'll also catpure the metrics returned by the function in a dataframe for present it in [results](#results) section. This will result in 8 models and metrics for each of them.
+With the generic fucntion defined, now we'll fit 3 starter models defined in the section [Methodology](#methodology-metrics) section and search two best models using the function, one with backward AIC search and another with backward BIC search. Along they way we'll also catpure the metrics returned by the function in a dataframe for present it in [results](#results) section. This will result in 6 models and metrics for each of them.
 
 ```{r}
 ### Define starter models ### 
@@ -374,9 +384,6 @@ beer_m2_int2 = lm(ABV ~ (.)^2, data = beer_data_trn)
 beer_m3_ply2 = lm(ABV ~ (.) + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + I(BoilTime^2) +
                     I(BoilGravity^2) + I(Efficiency^2), data = beer_data_trn)
 
-# starter model which encompasses all the effects of above model
-beer_m4_all  = lm(ABV ~ (.) + (.)^2 + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) + I(BoilTime^2) +
-                    I(BoilGravity^2) + I(Efficiency^2), data = beer_data_trn)
 ```
 
 ```{r}
@@ -390,30 +397,24 @@ beer_m2_int2_bst_BIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "
 beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "AIC")
 beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "BIC")
 
-beer_m4_all_bst_AIC  = func_fit_get_met(beer_m4_all, dir = "backward", crit = "AIC")
-beer_m4_all_bst_BIC  = func_fit_get_met(beer_m4_all, dir = "backward", crit = "BIC")
 ```
 
 ```{r}
 # create list of models for easy access later
-beer_models_lst = list("beer_m1_add_bst_AIC" = beer_m1_add_bst_AIC$model_bst,
-                       "beer_m1_add_bst_BIC" = beer_m1_add_bst_BIC$model_bst,
+beer_models_lst = list("beer_m1_add_bst_AIC"  = beer_m1_add_bst_AIC$model_bst,
+                       "beer_m1_add_bst_BIC"  = beer_m1_add_bst_BIC$model_bst,
                        "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$model_bst,
                        "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$model_bst,
                        "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$model_bst,
-                       "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst,
-                       "beer_m4_all_bst_AIC" = beer_m4_all_bst_AIC$model_bst,
-                       "beer_m4_all_bst_BIC" = beer_m4_all_bst_BIC$model_bst)
+                       "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst)
 
 # create a dataframe containing rows of metric results for each model for easy access later
-beer_models_metrics = rbind("beer_m1_add_bst_AIC" = beer_m1_add_bst_AIC$metrics_v,
-                            "beer_m1_add_bst_BIC" = beer_m1_add_bst_BIC$metrics_v,
+beer_models_metrics = rbind("beer_m1_add_bst_AIC"  = beer_m1_add_bst_AIC$metrics_v,
+                            "beer_m1_add_bst_BIC"  = beer_m1_add_bst_BIC$metrics_v,
                             "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$metrics_v,
                             "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$metrics_v,
                             "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$metrics_v,
-                            "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v,
-                            "beer_m4_all_bst_AIC" = beer_m4_all_bst_AIC$metrics_v,
-                            "beer_m4_all_bst_BIC" = beer_m4_all_bst_BIC$metrics_v)
+                            "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v)
 ```
 
 Below is the table containing metrics for all the models found from the selection procedures.
@@ -421,7 +422,7 @@ Below is the table containing metrics for all the models found from the selectio
 ```{r echo=FALSE, warning=FALSE}
 kable(beer_models_metrics) %>%
   kable_styling("striped") %>%
-  row_spec(7, bold = T, color = "black", background = "#c5dfb3")
+  row_spec(4, bold = T, color = "black", background = "#c5dfb3")
 ```
 
 In this table, the best model is highlighted in green, we'll revisit this again in [results](#results) and [discussions](#discussion) section.
@@ -436,25 +437,24 @@ In below `R` code we are finding the influential observationsusing cooks distanc
 
 ```{r}
 # compute cooks distance and find the count of records that are highly influential
-influ_cnt = sum(cooks.distance(beer_m4_all_bst_AIC$model_bst) > 4 / length(cooks.distance(beer_m4_all_bst_AIC$model_bst)))
+influ_cnt = sum(cooks.distance(beer_m2_int2_bst_BIC$model_bst) > 4 / length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))
 ```
 
 We see that there are $`r influ_cnt`$ influential observations. We'll now try to fit a model without without the influential observations and see if the resulting model does any better; we'll comparae the metrics for the model before and after removing the influential observations.
 
 ```{r, warning=FALSE}
 # fit starter model without the influential observations
-beer_m4_all_imprv  = lm(ABV ~ (.) + (.)^2 + I(Size^2) + I(OG^2) + I(IBU^2) + I(Color^2) + I(BoilSize^2) 
-                        + I(BoilTime^2) + I(BoilGravity^2) + I(Efficiency^2), 
+beer_m2_int2_imprv  = lm(ABV ~ (.)^2, 
                         data = beer_data_trn,
-                        subset = cooks.distance(beer_m4_all_bst_AIC$model_bst) > 4 /
-                                  length(cooks.distance(beer_m4_all_bst_AIC$model_bst)))
+                        subset = cooks.distance(beer_m2_int2_bst_BIC$model_bst) > 4 /
+                                  length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))
 
 # do backward AIC search and find best model
-beer_m4_all_bst_AIC_impv  = func_fit_get_met(beer_m4_all_imprv, dir = "backward", crit = "AIC")
+beer_m2_int2_bst_BIC_impv  = func_fit_get_met(beer_m2_int2_imprv, dir = "backward", crit = "AIC")
 
 # store the before and after metrics in a dataframe
-metrics_bfr_afr = rbind("before" = beer_models_metrics[7,],
-                        "after"  = beer_m4_all_bst_AIC_impv$metrics_v)
+metrics_bfr_afr = rbind("before" = beer_models_metrics[4,],
+                        "after"  = beer_m2_int2_bst_BIC_impv$metrics_v)
 
 ```
 
@@ -466,14 +466,14 @@ kable(metrics_bfr_afr) %>%
   row_spec(1, bold = T, color = "black", background = "#c5dfb3")
 ```
 ```{r echo=FALSE}
-beer_model_best = beer_m4_all_bst_AIC$model_bst
+beer_model_best = beer_m2_int2_bst_BIC$model_bst
 #length(coef(beer_model_best))
 ```
 
 Below is the summary of the best model, it has $`r length(coef(beer_model_best))`$ $\beta$ parameters!
 
 ```{r}
-beer_model_best = beer_m4_all_bst_AIC$model_bst
+beer_model_best = beer_m2_int2_bst_BIC$model_bst
 summary(beer_model_best)
 ```
 
@@ -490,7 +490,7 @@ Below is the table containing metrics for all the models found from the initial 
 ```{r echo=FALSE, warning=FALSE}
 kable(beer_models_metrics) %>%
   kable_styling("striped") %>%
-  row_spec(7, bold = T, color = "black", background = "#c5dfb3")
+  row_spec(4, bold = T, color = "black", background = "#c5dfb3")
 ```
 
 <br>
@@ -512,8 +512,8 @@ Below is the Actual Vs Predicted scatter plot for the best model fit with and wi
 <center>**Fig-1**</center>
 
 ```{r}
-model_bfr = beer_m4_all_bst_AIC$model_bst
-model_afr = beer_m4_all_bst_AIC_impv$model_bst
+model_bfr = beer_m2_int2_bst_BIC$model_bst
+model_afr = beer_m2_int2_bst_BIC_impv$model_bst
 
 # use the above two models and plot Actual Vs Predicted side by side for them.
 # TBD TBD TBD
@@ -555,7 +555,7 @@ TBD TBD -  A final concluding statement   -    TBD TBD
 
 ### 6.1 Appendix - A
 
-TBD TBD -   Include details on assumptions diagnostics  -    TBD TBD 
+TBD TBD -   Include details on assumptions diagnostics  -  TBD TBD 
 
 ---
 
