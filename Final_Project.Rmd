@@ -94,6 +94,7 @@ Below are the detailed tasks performed as part of data pre-processing:
 - Remove spaces in the levels of categorical attributes `SugarScale` and `BrewMethod`for easy representation in model summary (specifically interaction models).
 - Coerce `BoilGravity` into a numerical attribute
 - Reorder the row numbers (names)
+- Normalize OG measurements based on the method of measurements (See http://betatestbrewing.com/pages/plato_to_sg.html)
 
 Below is the `R` code block for the tasks(pseudocode) described above,
 
@@ -124,6 +125,8 @@ beer_data$BoilGravity = as.numeric(beer_data$BoilGravity)
 # reorder row numbers
 rownames(beer_data) = c(1:nrow(beer_data))
 
+# normailize OG for "Plato" measurements
+invisible(ifelse(beer_data$SugarScale == "Specific Gravity", beer_data$OG, beer_data$OG <- 1 + ((beer_data$OG)/ (258.6 - ((227.1*beer_data$OG)/258.2)))))
 ```
 
 Number of records in the dataset before pre-processing (raw dataset) : $`r nrow(beer_data_raw)`$
@@ -226,25 +229,59 @@ In this section we'll plot histogram for each of the attributes in the prepped d
 
 Below is the `R` code for plotting histogram for individual attributes,
 
-```{r}
-# histogram plots
-# TBD
-# TBD
+```{r fig.height=5}
+library(ggplot2)
+library(grid)
+library(gridExtra)
 
-# matrix of scatterplots
-# pairs()
-# TBD
+Size_hist = ggplot(data=beer_data, aes(beer_data$Size)) + 
+  geom_histogram() + 
+  labs(title = "Size Histrogram", x = "Size")
+
+OG_hist = ggplot(data=beer_data, aes(beer_data$OG)) + 
+  geom_histogram() +
+  labs(title = "OG Histrogram", x = "OG")
+
+IBU_hist = ggplot(data=beer_data, aes(beer_data$IBU)) + 
+  geom_histogram() +
+  labs(title = "IBU Histogram", x = "IBU")
+
+Color_hist = ggplot(data=beer_data, aes(beer_data$Color)) + 
+  geom_histogram() +
+  labs(title = "Color Distrubution", x = "Color")
+
+BoilSize_hist = ggplot(data=beer_data, aes(beer_data$BoilSize)) + 
+  geom_histogram() +
+  labs(title = "BoilSize Distrubution", x = "BoilSize")
+
+BoilTime_hist = ggplot(data=beer_data, aes(beer_data$BoilTime)) + 
+  geom_histogram() +
+  labs(title = "BoilTime Distrubution", x = "BoilTime")
+
+BoilGravity_hist = ggplot(data=beer_data, aes(beer_data$BoilGravity)) + 
+  geom_histogram() +
+  labs(title = "BoilGravity Distrubution", x = "BoilGravity")
+
+Efficiency_hist = ggplot(data=beer_data, aes(beer_data$Efficiency)) + 
+  geom_histogram() +
+  labs(title = "Efficiency Distrubution", x = "Efficiency")
+
+
+grid.arrange(Size_hist, OG_hist, IBU_hist, Color_hist, BoilSize_hist, BoilTime_hist, BoilGravity_hist, Efficiency_hist, nrow = 4, ncol = 2, heights = c(2.5, 2.5, 2.5, 2.5), top = textGrob("Predictor Historgrams",gp=gpar(fontsize=20,font=3)))
 ```
 
-[graphs will follow here]
+```{r fig.height=20, fig.width=20}
+pairs(beer_data, col = "#004e66", pch = 20)
+```
+
 
 **Inferences:**
 
 From the above visuals we can make below inferences,
 
-- tbd tbd tbd
-- tbd tbd tbd
-- tbd tbd tbd
+- Looking at the histrograms, we see that certain predictors might have values we would consider as an outlier. Size has a value that is at least two orders of magnitude greater than the remainder of the data. In addition, BoilSize also has a value that appears to be at least two orders of magnitude greater than the remainder of the data. This will not likely reduce our model accuracy by a great amount but it is good to keep in mind that we may not get accurate predictions when the parameters take on those large values.
+
+- Looking to the pairs plot, we see that BoilSize and Size are essentially correlated. This implies that we should remove at least on the values for our final predictor model. There does not appear to be any other colinearity issues implied by the pairs graph.
 
 ---
 
@@ -394,8 +431,8 @@ beer_m1_add_bst_BIC  = func_fit_get_met(beer_m1_add, dir = "backward", crit = "B
 beer_m2_int2_bst_AIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "AIC")
 beer_m2_int2_bst_BIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "BIC")
 
-beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "AIC")
-beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "BIC")
+# beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "AIC")
+# beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "BIC")
 
 ```
 
@@ -404,17 +441,17 @@ beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "
 beer_models_lst = list("beer_m1_add_bst_AIC"  = beer_m1_add_bst_AIC$model_bst,
                        "beer_m1_add_bst_BIC"  = beer_m1_add_bst_BIC$model_bst,
                        "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$model_bst,
-                       "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$model_bst,
-                       "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$model_bst,
-                       "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst)
+                       "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$model_bst)
+                       # "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$model_bst,
+                       # "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst)
 
 # create a dataframe containing rows of metric results for each model for easy access later
 beer_models_metrics = rbind("beer_m1_add_bst_AIC"  = beer_m1_add_bst_AIC$metrics_v,
                             "beer_m1_add_bst_BIC"  = beer_m1_add_bst_BIC$metrics_v,
                             "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$metrics_v,
-                            "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$metrics_v,
-                            "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$metrics_v,
-                            "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v)
+                            "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$metrics_v)
+                            # "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$metrics_v,
+                            # "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v)
 ```
 
 Below is the table containing metrics for all the models found from the selection procedures.
@@ -446,7 +483,7 @@ We see that there are $`r influ_cnt`$ influential observations. We'll now try to
 # fit starter model without the influential observations
 beer_m2_int2_imprv  = lm(ABV ~ (.)^2, 
                         data = beer_data_trn,
-                        subset = cooks.distance(beer_m2_int2_bst_BIC$model_bst) > 4 /
+                        subset = cooks.distance(beer_m2_int2_bst_BIC$model_bst) < 4 /
                                   length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))
 
 # do backward AIC search and find best model
@@ -515,8 +552,22 @@ Below is the Actual Vs Predicted scatter plot for the best model fit with and wi
 model_bfr = beer_m2_int2_bst_BIC$model_bst
 model_afr = beer_m2_int2_bst_BIC_impv$model_bst
 
-# use the above two models and plot Actual Vs Predicted side by side for them.
-# TBD TBD TBD
+bfr_df = data.frame(x = fitted(model_bfr), y = beer_data_trn$ABV)
+afr_df = data.frame(x = fitted(model_afr), 
+                    y = beer_data_trn$ABV[cooks.distance(beer_m2_int2_bst_BIC$model_bst) < 4 /
+                                  length(cooks.distance(beer_m2_int2_bst_BIC$model_bst))])
+
+bfr_plot = ggplot(bfr_df, aes(x = x, y = y)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "With Influential Observations")
+
+afr_plot = ggplot(afr_df, aes(x = x, y = y)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Without Influential Observations")
+
+grid.arrange(bfr_plot, afr_plot, nrow = 1, ncol = 2, heights = c(2.5), top = textGrob("Fitted Vs Actual",gp=gpar(fontsize=20,font=3)))
 # set echo to false later
 ```
 
