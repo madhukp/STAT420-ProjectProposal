@@ -217,7 +217,7 @@ kable(BrewMethod_lvls) %>%
 
 From the above descriptive statistics we can make below inferences,
 
-- Response attribute does not stretch over several orders of magnitude, so transformations (like log()) on it is unlikely to help.
+- Response attribute does not stretch over several orders of magnitude, so transformations (like log()) on it is unlikely to help and hence transformations can be ignored during model search.
 - Similar to response attribute, none of the numeric attributes stretch over several orders of magnitude, so transformations (like log()) on them too is unlikely to help.
 - Categorical attributes' levels look good and does not raise any concern.
 
@@ -229,48 +229,48 @@ In this section we'll plot histogram for each of the attributes in the prepped d
 
 Below is the `R` code for plotting histogram for individual attributes,
 
-```{r fig.height=5}
+```{r fig.width=9, fig.height=10, fig.align='center', warning=FALSE}
 library(ggplot2)
 library(grid)
 library(gridExtra)
 
 Size_hist = ggplot(data=beer_data, aes(beer_data$Size)) + 
-  geom_histogram() + 
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "Size Histrogram", x = "Size")
 
 OG_hist = ggplot(data=beer_data, aes(beer_data$OG)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "OG Histrogram", x = "OG")
 
 IBU_hist = ggplot(data=beer_data, aes(beer_data$IBU)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "IBU Histogram", x = "IBU")
 
 Color_hist = ggplot(data=beer_data, aes(beer_data$Color)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "Color Distrubution", x = "Color")
 
 BoilSize_hist = ggplot(data=beer_data, aes(beer_data$BoilSize)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "BoilSize Distrubution", x = "BoilSize")
 
 BoilTime_hist = ggplot(data=beer_data, aes(beer_data$BoilTime)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "BoilTime Distrubution", x = "BoilTime")
 
 BoilGravity_hist = ggplot(data=beer_data, aes(beer_data$BoilGravity)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "BoilGravity Distrubution", x = "BoilGravity")
 
 Efficiency_hist = ggplot(data=beer_data, aes(beer_data$Efficiency)) + 
-  geom_histogram() +
+  geom_histogram(bins=30, fill = "#004e66") + 
   labs(title = "Efficiency Distrubution", x = "Efficiency")
-
 
 grid.arrange(Size_hist, OG_hist, IBU_hist, Color_hist, BoilSize_hist, BoilTime_hist, BoilGravity_hist, Efficiency_hist, nrow = 4, ncol = 2, heights = c(2.5, 2.5, 2.5, 2.5), top = textGrob("Predictor Historgrams",gp=gpar(fontsize=20,font=3)))
 ```
 
-```{r fig.height=20, fig.width=20}
+
+```{r fig.height=20, fig.width=20, fig.align='center'}
 pairs(beer_data, col = "#004e66", pch = 20)
 ```
 
@@ -322,17 +322,6 @@ This section includes the detailed `R` code implementation following the approac
 
 **Train and Test Split: **
 
-
----
-
-### 3.5 Implementation
-
-This section includes the detailed `R` code implementation following the approach described in previous section.
-
-<br>
-
-**Train and Test Split: **
-
 First we'll split the dataset into train and test data. We'll set a seed and randomly pick 20% of data and set it asign as test data and will use rest 80% as the train data. Below is the `R` code for same.
 
 ```{r}
@@ -359,7 +348,7 @@ Now, we'll build a generic fuction which will below tasks,
     + `dir`: Direction of search
     + `crit`: Selection metric to be used - "AIC" or "BIC"
 - Then, identify the model using the search method dicated by the input parameters.
-- Finally computeS below metrics and return a named vector of these metrics.
+- Finally compute metrics defined in [Methodology & Metrics](#methodology-metrics) section and return a named vector of these metrics.
     + `strt_model`: Starting model for search
     + `dir`: Direction of search
     + `crit`: Selection metric to be used - "AIC" or "BIC"
@@ -387,17 +376,20 @@ func_fit_get_met = function(strt_model,
   # compute metrics and return a named vector of metrics
   return(
     list("model_bst" = model_bst,
-         "metrics_v" = c("rmse_trn"     = mean(resid(model_bst)^2),
-                         "rmse_tst"     = mean((predict(model_bst, newdata = beer_data_tst) - beer_data_tst$ABV)^2),
-                         "loocv_rmse"   = sqrt(mean((resid(model_bst) / (1 - hatvalues(model_bst))) ^ 2)),
-                         "r2"           = summary(model_bst)$r.squared,
-                         "adj_r2"       = summary(model_bst)$adj.r.squared,
-                         "prct_err_trn" = (1/nrow(beer_data_trn)) * 
-                                          sum( abs(predict(model_bst) - beer_data_trn$ABV) / predict(model_bst) ) * 100,
-                         "prct_err_tst" = (1/nrow(beer_data_tst)) * 
-                                          sum( abs(predict(model_bst, newdata = beer_data_tst) - beer_data_tst$ABV) / 
-                                                 predict(model_bst, newdata = beer_data_tst) ) * 100,
-                         "trn_time"     = end_time - strt_time
+         "metrics_v" = c("RMSE on Train Data"        = mean(resid(model_bst)^2),
+                         "RMSE on Test Data"         = mean((predict(model_bst, 
+                                                                     newdata = beer_data_tst) - beer_data_tst$ABV)^2),
+                         "LOOCV.RMSE"                = sqrt(mean((resid(model_bst) / (1 - hatvalues(model_bst))) ^ 2)),
+                         "R-squared"                 = summary(model_bst)$r.squared,
+                         "Adjusted R-squared"        = summary(model_bst)$adj.r.squared,
+                         "Avg % Error on Train Data" = (1/nrow(beer_data_trn)) * 
+                                                        sum( abs(predict(model_bst) - beer_data_trn$ABV) 
+                                                             / predict(model_bst) ) * 100,
+                         "Avg % Error on Test Data"  = (1/nrow(beer_data_tst)) * 
+                                                        sum( abs(predict(model_bst, newdata = beer_data_tst) 
+                                                                 - beer_data_tst$ABV) / 
+                                                               predict(model_bst, newdata = beer_data_tst) ) * 100,
+                         "Training Time"             = as.numeric(end_time - strt_time)
            )))
 }
 ```
@@ -431,8 +423,8 @@ beer_m1_add_bst_BIC  = func_fit_get_met(beer_m1_add, dir = "backward", crit = "B
 beer_m2_int2_bst_AIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "AIC")
 beer_m2_int2_bst_BIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "BIC")
 
-# beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "AIC")
-# beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "BIC")
+beer_m3_ply2_bst_AIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "AIC")
+beer_m3_ply2_bst_BIC = func_fit_get_met(beer_m3_ply2, dir = "backward", crit = "BIC")
 
 ```
 
@@ -441,23 +433,23 @@ beer_m2_int2_bst_BIC = func_fit_get_met(beer_m2_int2, dir = "backward", crit = "
 beer_models_lst = list("beer_m1_add_bst_AIC"  = beer_m1_add_bst_AIC$model_bst,
                        "beer_m1_add_bst_BIC"  = beer_m1_add_bst_BIC$model_bst,
                        "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$model_bst,
-                       "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$model_bst)
-                       # "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$model_bst,
-                       # "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst)
+                       "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$model_bst,
+                       "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$model_bst,
+                       "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$model_bst)
 
 # create a dataframe containing rows of metric results for each model for easy access later
 beer_models_metrics = rbind("beer_m1_add_bst_AIC"  = beer_m1_add_bst_AIC$metrics_v,
                             "beer_m1_add_bst_BIC"  = beer_m1_add_bst_BIC$metrics_v,
                             "beer_m2_int2_bst_AIC" = beer_m2_int2_bst_AIC$metrics_v,
-                            "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$metrics_v)
-                            # "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$metrics_v,
-                            # "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v)
+                            "beer_m2_int2_bst_BIC" = beer_m2_int2_bst_BIC$metrics_v,
+                            "beer_m3_ply2_bst_AIC" = beer_m3_ply2_bst_AIC$metrics_v,
+                            "beer_m3_ply2_bst_BIC" = beer_m3_ply2_bst_BIC$metrics_v)
 ```
 
 Below is the table containing metrics for all the models found from the selection procedures.
 
 ```{r echo=FALSE, warning=FALSE}
-kable(beer_models_metrics) %>%
+kable(beer_models_metrics, align = "c") %>%
   kable_styling("striped") %>%
   row_spec(4, bold = T, color = "black", background = "#c5dfb3")
 ```
@@ -468,46 +460,110 @@ In this table, the best model is highlighted in green, we'll revisit this again 
 
 ### 3.6 Model Refinement
 
-In this section we'll try to diagnorse the influential observations for the best model that was picked in previous section and see if removing the influential observations makes any improvements in the model.
+In this section we'll try to diagnorse the influential observations for the best model that was picked in previous section and see if removing the outliers or influential observations or handling highly collinear attributes makes any improvements in the model.
 
-In below `R` code we are finding the influential observationsusing cooks distance. 
+**Outliers:**
+In below `R` code we are computing standardized residuals and finding outliers using `3 standard deviations` as the cutt-off; that is any observations whose standardized residuals are `3 standard deviations` will be considered outliers.
+
+```{r}
+# compute standardized residuals
+outlr_cnt = sum(abs(rstandard(beer_m2_int2_bst_BIC$model_bst)) > 3)
+outlr_cnt
+```
+
+We see that there are $`r outlr_cnt`$ outliers. We'll now try to fit a model without the influential observations and see if the resulting model does any better; we'll comparae the metrics for the model before and after removing the influential observations.
+
+```{r, warning=FALSE}
+# fit starter model without the influential observations
+beer_m2_int2_outlr  = lm(ABV ~ (.)^2, 
+                        data = beer_data_trn,
+                        subset = abs(rstandard(beer_m2_int2_bst_BIC$model_bst)) <= 3)
+
+# do backward AIC search and find best model
+beer_m2_int2_bst_BIC_outlr  = func_fit_get_met(beer_m2_int2_outlr, dir = "backward", crit = "BIC")
+
+# store the before and after metrics in a dataframe
+metrics_bfr_afr_outlr = rbind("before" = beer_models_metrics[4,],
+                        "after"  = beer_m2_int2_bst_BIC_outlr$metrics_v)
+
+```
+
+Below table indicates the metrics of the model before and after removing the outlier observations. We can see that removing the outliers didn't do any better, so we'll stick to the best model found with the outliers. We'll revisit this and argue further in [results](#results) and [discussions](#discussion) section. 
+
+```{r, echo=FALSE}
+kable(metrics_bfr_afr_outlr, align = "c") %>%
+  kable_styling("striped") %>%
+  row_spec(1, bold = T, color = "black", background = "#c5dfb3")
+```
+
+**Influential Observations: **
+
+In below `R` code we are finding the influential observations using cooks distance. 
 
 ```{r}
 # compute cooks distance and find the count of records that are highly influential
 influ_cnt = sum(cooks.distance(beer_m2_int2_bst_BIC$model_bst) > 4 / length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))
 ```
 
-We see that there are $`r influ_cnt`$ influential observations. We'll now try to fit a model without without the influential observations and see if the resulting model does any better; we'll comparae the metrics for the model before and after removing the influential observations.
+We see that there are $`r influ_cnt`$ influential observations. We'll now try to fit a model without the influential observations and see if the resulting model does any better; we'll comparae the metrics for the model before and after removing the influential observations.
 
 ```{r, warning=FALSE}
 # fit starter model without the influential observations
-beer_m2_int2_imprv  = lm(ABV ~ (.)^2, 
+beer_m2_int2_infl   = lm(ABV ~ (.)^2, 
                         data = beer_data_trn,
                         subset = cooks.distance(beer_m2_int2_bst_BIC$model_bst) < 4 /
                                   length(cooks.distance(beer_m2_int2_bst_BIC$model_bst)))
 
 # do backward AIC search and find best model
-beer_m2_int2_bst_BIC_impv  = func_fit_get_met(beer_m2_int2_imprv, dir = "backward", crit = "AIC")
+beer_m2_int2_bst_BIC_infl  = func_fit_get_met(beer_m2_int2_infl, dir = "backward", crit = "BIC")
 
 # store the before and after metrics in a dataframe
-metrics_bfr_afr = rbind("before" = beer_models_metrics[4,],
-                        "after"  = beer_m2_int2_bst_BIC_impv$metrics_v)
+metrics_bfr_afr_infl = rbind("before" = beer_models_metrics[4,],
+                        "after"  = beer_m2_int2_bst_BIC_infl$metrics_v)
 
 ```
 
-Below table indicates the metrics of the model before and after removing the influential observations. We can see that removing the influential observations didn't do any better, so we'll stick to the best model found with the influential observations. We'll revisit this again in [results](#results) and [discussions](#discussion) section. Also interested readers go check [Appendix - A](#appendix---a) for assumptions diagnostics for the best model.
+Below table indicates the metrics of the model before and after removing the influential observations. We can see that removing the influential observations didn't do any better, so we'll stick to the best model found with the influential observations. We'll revisit this again in [results](#results) and [discussions](#discussion) section. 
 
 ```{r, echo=FALSE}
-kable(metrics_bfr_afr) %>%
+kable(metrics_bfr_afr_infl, align = "c") %>%
   kable_styling("striped") %>%
   row_spec(1, bold = T, color = "black", background = "#c5dfb3")
 ```
+
+**Collinearity:**
+
+Under [exploratory data visualization](#exploratory-visualization) section we mentioned that `BoilSize` and `Size` are highly colinear. So now we'll remove one of these attributes - say `BoilSize` - and see if it results in a better model; we'll comparae the metrics for the model before and after removing the influential observations.
+
+```{r, warning=FALSE}
+# fit starter model without the influential observations
+beer_m2_int2_colnr   = lm(ABV ~ (.-BoilSize)^2, data = beer_data_trn)
+
+# do backward AIC search and find best model
+beer_m2_int2_bst_BIC_colnr  = func_fit_get_met(beer_m2_int2_colnr, dir = "backward", crit = "BIC")
+
+# store the before and after metrics in a dataframe
+metrics_bfr_afr_colnr = rbind("before" = beer_models_metrics[4,],
+                        "after"  = beer_m2_int2_bst_BIC_colnr$metrics_v)
+
+```
+
+Below table indicates the metrics of the model before and after handling highly collinear attributes and we can see that this didn't result in a better model what we already had, so we'll stick to the best model found with the influential observations. We'll discuss this futher in [results](#results) and [discussions](#discussion) section. 
+
+```{r, echo=FALSE}
+kable(metrics_bfr_afr_colnr, align = "c") %>%
+  kable_styling("striped") %>%
+  row_spec(1, bold = T, color = "black", background = "#c5dfb3")
+```
+
 ```{r echo=FALSE}
 beer_model_best = beer_m2_int2_bst_BIC$model_bst
 #length(coef(beer_model_best))
 ```
 
-Below is the summary of the best model, it has $`r length(coef(beer_model_best))`$ $\beta$ parameters!
+Finally after above diagnosis, we'll stick to the best model found without removing outliers or influential observations or collinear attributes. Also interested readers go check [Appendix - A](#appendix---a) for assumptions diagnostics for the best model.
+
+Below is the summary of our final (best) model, it has $`r length(coef(beer_model_best))`$ $\beta$ parameters!
 
 ```{r}
 beer_model_best = beer_m2_int2_bst_BIC$model_bst
@@ -525,50 +581,139 @@ Below is the table containing metrics for all the models found from the initial 
 <center>**Table-1**</center>
 
 ```{r echo=FALSE, warning=FALSE}
-kable(beer_models_metrics) %>%
+kable(beer_models_metrics, align = "c") %>%
   kable_styling("striped") %>%
   row_spec(4, bold = T, color = "black", background = "#c5dfb3")
 ```
 
 <br>
 
-Below table contains metrics captured before and after removing the influential observations for the best one picked from above table.
+Below table contains metrics captured before and after removing the outliers for the best model picked from Table-1 above.
 
 <center>**Table-2**</center>
 
 ```{r, echo=FALSE}
-kable(metrics_bfr_afr) %>%
+kable(metrics_bfr_afr_outlr, align = "c") %>%
   kable_styling("striped") %>%
   row_spec(1, bold = T, color = "black", background = "#c5dfb3")
 ```
 
 <br>
 
-Below is the Actual Vs Predicted scatter plot for the best model fit with and wihout influential observations,
+Below table contains metrics captured before and after removing the influential observations for the best model picked from Table-1 above.
+
+<center>**Table-3**</center>
+
+```{r, echo=FALSE}
+kable(metrics_bfr_afr_infl, align = "c") %>%
+  kable_styling("striped") %>%
+  row_spec(1, bold = T, color = "black", background = "#c5dfb3")
+```
+
+<br>
+
+Below table contains metrics captured before and after removing collinear attributes for the best model picked from Table-1 above.
+
+<center>**Table-4**</center>
+
+```{r, echo=FALSE}
+kable(metrics_bfr_afr_colnr, align = "c") %>%
+  kable_styling("striped") %>%
+  row_spec(1, bold = T, color = "black", background = "#c5dfb3")
+```
+
+<br>
+
+
+Below is the Actual Vs Predicted scatter plot for the best model fit with and wihout outlier observations,
 
 <center>**Fig-1**</center>
 
-```{r}
+```{r fig.width=9, fig.height=5, fig.align='center', warning=FALSE, echo=FALSE}
 model_bfr = beer_m2_int2_bst_BIC$model_bst
-model_afr = beer_m2_int2_bst_BIC_impv$model_bst
+model_afr = beer_m2_int2_bst_BIC_outlr$model_bst
+
+bfr_df = data.frame(x = fitted(model_bfr), y = beer_data_trn$ABV)
+afr_df = data.frame(x = fitted(model_afr), 
+                    y = beer_data_trn$ABV[abs(rstandard(model_bfr)) <= 3])
+
+bfr_plot = ggplot(bfr_df, aes(x = x, y = y)) +
+  scale_x_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  scale_y_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 1, intercept = 0, color = "darkorange", size = 1) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "With Outliers")
+
+afr_plot = ggplot(afr_df, aes(x = x, y = y)) +
+  scale_x_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  scale_y_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 1, intercept = 0, color = "darkorange", size = 1) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Without Outliers")
+
+grid.arrange(bfr_plot, afr_plot, nrow = 1, ncol = 2, heights = c(2.5), top = textGrob("Fitted Vs Actual (Outliers Diagnostics)",gp=gpar(fontsize=20,font=3)))
+```
+
+<br>
+
+Below is the Actual Vs Predicted scatter plot for the best model fit with and wihout influential observations,
+
+<center>**Fig-2**</center>
+
+```{r fig.width=9, fig.height=5, fig.align='center', warning=FALSE, echo=FALSE}
+model_bfr = beer_m2_int2_bst_BIC$model_bst
+model_afr = beer_m2_int2_bst_BIC_infl$model_bst
 
 bfr_df = data.frame(x = fitted(model_bfr), y = beer_data_trn$ABV)
 afr_df = data.frame(x = fitted(model_afr), 
                     y = beer_data_trn$ABV[cooks.distance(beer_m2_int2_bst_BIC$model_bst) < 4 /
                                   length(cooks.distance(beer_m2_int2_bst_BIC$model_bst))])
 
-bfr_plot = ggplot(bfr_df, aes(x = x, y = y)) +
-  geom_point() +
-  geom_abline(slope = 1, intercept = 0) +
+bfr_plot = ggplot(bfr_df, aes(x = x, y = y)) + 
+  scale_x_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  scale_y_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 1, intercept = 0, color = "darkorange", size = 1) +
   labs(x = "Fitted Values", y = "Actual Values", title = "With Influential Observations")
 
 afr_plot = ggplot(afr_df, aes(x = x, y = y)) +
-  geom_point() +
-  geom_abline(slope = 1, intercept = 0) +
+  scale_x_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  scale_y_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 1, intercept = 0, color = "darkorange", size = 1) +
   labs(x = "Fitted Values", y = "Actual Values", title = "Without Influential Observations")
 
-grid.arrange(bfr_plot, afr_plot, nrow = 1, ncol = 2, heights = c(2.5), top = textGrob("Fitted Vs Actual",gp=gpar(fontsize=20,font=3)))
-# set echo to false later
+grid.arrange(bfr_plot, afr_plot, nrow = 1, ncol = 2, heights = c(2.5), top = textGrob("Fitted Vs Actual (Influential Observations Diagnostics)",gp=gpar(fontsize=20,font=3)))
+```
+
+<br>
+
+Below is the Actual Vs Predicted scatter plot for the best model fit with and wihout collinear attributes,
+
+<center>**Fig-3**</center>
+
+```{r fig.width=9, fig.height=5, fig.align='center', warning=FALSE, echo=FALSE}
+model_bfr = beer_m2_int2_bst_BIC$model_bst
+model_afr = beer_m2_int2_bst_BIC_colnr$model_bst
+
+bfr_df = data.frame(x = fitted(model_bfr), y = beer_data_trn$ABV)
+afr_df = data.frame(x = fitted(model_afr), y = beer_data_trn$ABV)
+
+bfr_plot = ggplot(bfr_df, aes(x = x, y = y)) +
+  scale_x_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  scale_y_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 1, intercept = 0, color = "darkorange", size = 1) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "With Collinearity")
+
+afr_plot = ggplot(afr_df, aes(x = x, y = y)) +
+  scale_x_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  scale_y_continuous(minor_breaks = seq(0 , 55, 5), breaks = seq(0, 55, 10)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 1, intercept = 0, color = "darkorange", size = 1) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Without Collinearity")
+
+grid.arrange(bfr_plot, afr_plot, nrow = 1, ncol = 2, heights = c(2.5), top = textGrob("Fitted Vs Actual (Collinearity Diagnostics)",gp=gpar(fontsize=20,font=3)))
 ```
 
 ---
@@ -577,23 +722,32 @@ grid.arrange(bfr_plot, afr_plot, nrow = 1, ncol = 2, heights = c(2.5), top = tex
 
 ## 5. Discussion
 
+In this section we'll reflect on the results of our study and draw inferences and conclusion from them.
+
 ---
 
 ### 5.1 Reflection on Results
 
-- TBD TBD TBD
-- discuss table 1 resutls
-- discuss over-fitting  and under fitting
-- discuss table 2 results
-- discuss before and after metrics and discuss influential observations
-- discss Fig-1 scatter plots 
+**Initial Model Hunt: **
 
+For this study, we started with three model structures - an additive model, a two-way interactions model and a two-dgree polynomial one. We then did a backward search using AIC and BIC on all the three starter models and arrived at a best model for each. This search method resulted in 6 models. Table-1 under the [results](#results) section indicates the various metrics for each of these models. In this table we can see that the additive models (first two rows) performed the worst. Compared to other two starter model, it produced highest RMSE on test data, highest average percent error and lowest $R^2$ and $Adjusted\text{ }R^2$ values. So we straight way rejected the models resulting from additve starter model AIC/BIC search. Similary, the two-degree polynomial models (last two rows) performed poorly, producing metrics close to that of additive models. Two-way interactions model (middle two rows) on the other hand performed the best, it gave very low RMSE of around $0.19$ on test data indicating that it's prediction was roughly off by only $0.19$ which is very low error percent for an ABV value of say 5. It achieved high $R^2$ and $Adjusted\text{ }R^2$ values; both the interaction models were able to explain around $95\text{%}$ of variations in the reponse attribute `ABV`. Other metrics of these two models were also acceptable compared to additive and polynomial models; like low LOOCV.RMSE and low average percent error on test data. The low RMSE on test data also suggested that these two interaction models doesn't suffer from over-fitting or under-fitting problems. So, the two interaction models were short listed and picking the best among them was bit hard as most of their metrics were pretty close. The average percent error of two-way interaction model resulting from AIC search (row number 3) resulted in a very high average percent error on train data, even worse than the additive and polynomial models. This raised suspicion and suggested that this model could have some drawbacks which was not exposed by the test data. Given this suspicion on row number 3 model and the fact that the model from row 4 produced least LOOCV.RMSE and is also a smaller model (because of BIC search) we decided to pick the _**interaction model from BIC search as the best model (row number 4)**_
+
+**Model Tuning/Further-Diagnostics: **
+
+After our inital model search indicated that interactions clearly were significant, as a next step we did some further analsyis on our best interaction model so see if there are any oppurtunities to tune the model for improved performance. We did three kinds of diagnositcs,
+
+- Outlier Diagnostics: First, anlaysis included check for outliers. Here we identified the outliers using standardized residuals and re-fit the model without them. Table-2 under [results](#results) section indicates the metrics of the interaction model before and after removing the outliers. Here we can see that removing outliers didn't help, the RMSE on train data dropped and that on test data increased suggesting over-fit problem. The "Fitted vs Actual" plot of Fig-1 also reflects the same. In this figure the overfitting problem in the second graph is indicated by the points there being slightly more closer to the line in comparison to those in the first graph. If only the test RMSE metric also had dropped the structure of second graph would have indicated an improvement. As a result of this diagnositics we rejected the model fit without the outliers.
+
+- Influential Observations Diagnostics: Next, we analyzed for influential observations. Here we identified the influential observations and re-fit the model without them. Table-3 under [results](#results) section indicates the metrics of the interaction model before and after removing the influential observations. Similar to Outlier Diagnostics we can see that removing influential observations too didn't help and the model suffered from over-fitting problem reflected by the reduced RMSE on train data and increased RMSE on test data. "Fitted vs Actual" plot of Fig-2 is very close to that of Fig-1 and so suggests similar inferences. As a result of this diagnositics we rejected the model fit without the influential observations
+
+- Collinearity Diagnostics: Finally, we tried to handle highly collinear attributes - `BoilSize` and `Size` - to see if it is throwing off the estimates for any $\beta$ parameters and so removing any one of them would help improve the model. Here we re-fit the model without `BoilSize` and captured metrics for it. Table-4 under [results](#results) section indicates the metrics of the interaction model before and after handling collinearity issue. Metrics in this table clearly indicates that there was no improvement; most of the metrics before and after were pretty close. This is further stressed by the "Fitted vs Actual" plot of Fig-3 where the two graphs look very identical to each other. This confirmed the fact that for the purpose of "prediction" collinearity is not an issue. Hence, at the end of this diagnositc as well we decided to stick with our best model picked from Table-1.
 
 ---
 
 ### 5.2 Conclusion
 
-TBD TBD -  A final concluding statement   -    TBD TBD 
+Our final model was able to explain almost $95\text{%}$ of variations in `ABV` which is impressive and also resulted in RMSE of around $0.19$ on unseen data. Based on this we conclude that our model does a pretty good job in predicting `ABV` using just the attributes from initial brewing process and so beer enthusiats can use this model to get a good estimation of their final product in the initial stages of brewing process itself and also save cost by doing away with any gadgets usually used to measure `ABV`.
+
 
 ---
 
@@ -606,7 +760,35 @@ TBD TBD -  A final concluding statement   -    TBD TBD
 
 ### 6.1 Appendix - A
 
-TBD TBD -   Include details on assumptions diagnostics  -  TBD TBD 
+If the main objective of statistical study is to produce a "prediction" model then confirmity to LINE assumptions is of little importance, nevertheless in this section we have presented the assumptions diagnostics on our best model for interested users.
+
+Below is the "Residuals Vs Fitted Plot" and "Normal Q-Q Plot",
+
+```{r fig.width=9, fig.height=5, fig.align='center', warning=FALSE, echo=FALSE}
+assm1_df = data.frame(x = fitted(beer_model_best), y = resid(beer_model_best))
+assm2_df = data.frame(y = resid(beer_model_best))
+
+assm1_plot = ggplot(assm1_df, aes(x = x, y = y)) +
+  geom_point(color = "#004e66") +
+  geom_abline(slope = 0, intercept = 0, color = "darkorange", size = 1) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Residuals Vs Fitted Plot")
+
+y = quantile(resid(beer_model_best), c(0.25, 0.75))
+x = qnorm(c(0.25, 0.75))
+slope = diff(y)/diff(x)
+int = y[1L] - slope * x[1L]
+assm2_plot = ggplot(assm2_df, aes(sample=y)) + stat_qq(alpha = 0.5, color = "#004e66") + 
+    geom_abline(slope = slope, intercept = int, color = "darkorange", size = 1) +
+    labs(x = "Theoretical Quantiles", y = "Sample Quantiles", title = "Normal Q-Q Plot")
+
+grid.arrange(assm1_plot, assm2_plot, nrow = 1, ncol = 2, heights = c(2.5), top = textGrob("",gp=gpar(fontsize=20,font=3)))
+```
+
+From above plots we can say that,
+
+- Linearity assumption is not violated as for any fitted value the mean of the residuals are roughly around 0 in the fitted vs residuals plot.
+- Constant variance assumption is violated as spread of residuals across fitted lines is not constant in the fitted vs residuals plot.
+- In the Q-Q plot we can see that it has thick edges but the majority of the points are on the line, so we would say that our model comes close in confirming to normality assumption.
 
 ---
 
@@ -614,13 +796,12 @@ TBD TBD -   Include details on assumptions diagnostics  -  TBD TBD
 
 **Just an extra, for fun,  what if we brew our own beer at home, but want to only serve 4-6 ABV contents for occasional beer drinkers?**
 
-Let's see (still using model 3):
+Let's see,
 
-```{r eval=FALSE}
+```{r}
+test_for_occasions = beer_data_tst[ which ( beer_data_tst$ABV <= 6 & beer_data_tst$ABV >=4 ),]
 
-test_for_occasions = new_test_set[ which ( new_test_set$ABV <= 6 & new_test_set$ABV >=4 ),]
-
-predicted_occasions = predict(model3, test_for_occasions, type="response")
+predicted_occasions = predict(beer_model_best, test_for_occasions, type="response")
 actual_occasions = test_for_occasions$ABV
 
 # RMSE
@@ -628,7 +809,8 @@ actual_occasions = test_for_occasions$ABV
 
 ```
 
-That's so much better. We should be able to brew beer, predicting an expected alcohool content with an error of only  if we focus our beer making around the 4-6 ABV.
+That's so much better. We should be able to brew beer, predicting an expected alcohool content with an error of roughly `r rmse` if we focus our beer making around the 4-6 ABV.
+
 
 ---
 
@@ -640,9 +822,9 @@ Here, we're assuming they're looking for stronger beer above 6 ABV perhaps. Let'
 
 ```{r eval=FALSE}
 
-test_for_hard = new_test_set[ which ( new_test_set$ABV > 6 ),]
+test_for_hard = beer_data_tst[ which ( beer_data_tst$ABV > 6 ),]
 
-predicted_hard = predict(model3, test_for_hard, type="response")
+predicted_hard = predict(beer_model_best, test_for_hard, type="response")
 actual_hard = test_for_hard$ABV
 
 # RMSE
@@ -650,7 +832,7 @@ actual_hard = test_for_hard$ABV
 
 ```
 
-Probably not. We will have an error rate of  - those beer drinkers will not be happy.
+Probably yes! We will have an error of roughly `r rmse` which is small and acceptable.
 
 ---
 
